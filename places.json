@@ -49,7 +49,7 @@
   },
   {
     "id": "1780498862888873",
-    "name": "San Diego, California, United States",
+    "name": "San Diego, California",
     "lat": 32.7174202,
     "lng": -117.162772,
     "label": "",
@@ -57,7 +57,7 @@
   },
   {
     "id": "1780498874624530",
-    "name": "Dallas, Texas, United States",
+    "name": "Dallas, Texas",
     "lat": 32.7762719,
     "lng": -96.7968559,
     "label": "",
@@ -89,7 +89,7 @@
   },
   {
     "id": "1780498925241600",
-    "name": "Los Angeles, California, United States",
+    "name": "Los Angeles, California",
     "lat": 34.0536909,
     "lng": -118.242766,
     "label": "",
