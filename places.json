@@ -230,5 +230,13 @@
     "lng": -101.4814241,
     "label": "",
     "icon": "📍"
+  },
+  {
+    "id": "1780518542096976",
+    "name": "Philadelphia, Pennsylvania",
+    "lat": 39.9527237,
+    "lng": -75.1635262,
+    "label": "",
+    "icon": "📍"
   }
 ]
