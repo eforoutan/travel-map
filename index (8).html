@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Places I've Been · World Map</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<style>
+  /* default = amber (warm charcoal + amber) */
+  :root,[data-theme="amber"]{
+    --char:#26221d; --char-2:#2f2a24; --char-3:#3a342c;
+    --amber:#e8a33d; --amber-soft:#f0bd6b;
+    --cream:#efe7da; --muted:#a99c87; --line:#433c33;
+    --ink:#26221d; --shadow:rgba(0,0,0,.35);
+  }
+  [data-theme="slate"]{
+    --char:#161c24; --char-2:#1d2530; --char-3:#27313f;
+    --amber:#39c2c9; --amber-soft:#5fd8de;
+    --cream:#e6eef4; --muted:#8b9bab; --line:#33404f;
+    --ink:#161c24; --shadow:rgba(0,0,0,.4);
+  }
+  [data-theme="forest"]{
+    --char:#1c2a22; --char-2:#23342a; --char-3:#2d4135;
+    --amber:#e0b15a; --amber-soft:#edc880;
+    --cream:#eaf0e6; --muted:#94a896; --line:#36493d;
+    --ink:#1c2a22; --shadow:rgba(0,0,0,.35);
+  }
+  [data-theme="plum"]{
+    --char:#211726; --char-2:#2b1f31; --char-3:#382740;
+    --amber:#d678c6; --amber-soft:#e79ddb;
+    --cream:#f0e6f0; --muted:#a892ab; --line:#43314c;
+    --ink:#211726; --shadow:rgba(0,0,0,.4);
+  }
+  [data-theme="paper"]{
+    --char:#f3ede2; --char-2:#ebe3d4; --char-3:#fdfaf3;
+    --amber:#c0612e; --amber-soft:#d9824f;
+    --cream:#332a20; --muted:#8a7a63; --line:#d8ccb8;
+    --ink:#332a20; --shadow:rgba(120,100,70,.22);
+  }
+  [data-theme="mono"]{
+    --char:#1a1a1a; --char-2:#222; --char-3:#2c2c2c;
+    --amber:#e8e8e8; --amber-soft:#fff;
+    --cream:#f2f2f2; --muted:#9a9a9a; --line:#3a3a3a;
+    --ink:#1a1a1a; --shadow:rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Manrope',system-ui,sans-serif;
+    background:var(--char);
+    color:var(--cream);
+    overflow:hidden;
+  }
+  /* ---------- Layout ---------- */
+  .app{display:grid;grid-template-columns:340px 1fr;height:100vh}
+  @media(max-width:760px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  }
+
+  /* ---------- Sidebar ---------- */
+  .panel{
+    background:linear-gradient(180deg,var(--char-2),var(--char));
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow:hidden;position:relative;z-index:1000;
+  }
+  .brand{padding:26px 24px 20px;border-bottom:1px solid var(--line)}
+  .brand .kicker{
+    font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--amber);font-weight:700;
+  }
+  .brand h1{
+    font-weight:800;
+    font-size:30px;line-height:1.05;margin-top:8px;letter-spacing:-.02em;
+    color:var(--cream);
+  }
+  .brand .sub{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55;font-weight:500}
+
+  .controls{padding:20px 24px 8px}
+  label.fld{display:block;font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin:14px 0 7px;font-weight:700}
+  .searchwrap{position:relative}
+  #search{
+    width:100%;padding:11px 12px;font-family:inherit;
+    font-size:13px;border:1px solid var(--line);background:var(--char-3);
+    color:var(--cream);outline:none;border-radius:8px;font-weight:500;
+  }
+  #search::placeholder{color:#8a7d68}
+  #search:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+  .results{
+    position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:1200;
+    background:var(--char-3);border:1px solid var(--line);max-height:230px;
+    overflow:auto;display:none;box-shadow:0 10px 26px var(--shadow);border-radius:8px}
+  .results.show{display:block}
+  .results div{padding:9px 12px;font-size:12px;cursor:pointer;
+    border-bottom:1px solid var(--line);line-height:1.35;color:var(--cream)}
+  .results div:last-child{border-bottom:none}
+  .results div:hover{background:var(--amber);color:var(--char)}
+  .results .hint{cursor:default;color:var(--muted);font-style:italic}
+
+  .iconpick{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+  .iconpick button{
+    width:38px;height:38px;border:1px solid var(--line);background:var(--char-3);
+    font-size:18px;cursor:pointer;display:grid;place-items:center;border-radius:8px;
+    transition:transform .08s,border-color .1s,background .1s;line-height:1}
+  .iconpick button:hover{transform:translateY(-2px);border-color:var(--muted)}
+  .iconpick button.sel{border-color:var(--amber);background:rgba(232,163,61,.16);
+    box-shadow:0 0 0 2px rgba(232,163,61,.25)}
+
+  /* list */
+  .listhead{padding:18px 24px 6px;display:flex;justify-content:space-between;
+    align-items:baseline;border-top:1px solid var(--line);margin-top:10px}
+  .listhead h2{font-size:16px;font-weight:700;color:var(--cream)}
+  .count{font-size:11px;color:var(--amber);font-weight:700}
+  .list{flex:1;overflow:auto;padding:6px 16px 18px}
+  .place{
+    display:flex;align-items:center;gap:10px;padding:10px 11px;margin:7px 0;
+    background:var(--char-3);border:1px solid var(--line);cursor:pointer;border-radius:10px;
+    transition:transform .08s,box-shadow .1s,border-color .1s}
+  .place:hover{transform:translateX(3px);box-shadow:0 4px 14px var(--shadow);
+    border-color:var(--amber)}
+  .place .emo{font-size:18px;line-height:1}
+  .place .meta{flex:1;min-width:0}
+  .place .nm{font-size:13px;font-weight:700;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;color:var(--cream)}
+  .place .lbl{font-size:10.5px;color:var(--muted);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;margin-top:2px;font-weight:500}
+  .place .lbl i{color:#7c6f5b;font-style:italic}
+  .place .edit,.place .del{border:none;background:none;color:#7c6f5b;font-size:14px;
+    cursor:pointer;padding:2px 4px;font-family:inherit;border-radius:6px;line-height:1}
+  .place .edit:hover{color:var(--amber)}
+  .place .del:hover{color:var(--amber)}
+  .empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12px;
+    line-height:1.6;font-weight:500}
+
+  .foot{padding:14px 24px;border-top:1px solid var(--line);
+    font-size:10px;color:var(--muted);display:flex;justify-content:space-between;font-weight:500}
+  .foot button{font:inherit;font-size:10px;border:none;background:none;
+    color:var(--amber);cursor:pointer;text-decoration:underline;font-weight:600}
+
+  .fitbtn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;margin-top:18px;padding:11px 12px;cursor:pointer;
+    font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
+    color:var(--char);background:var(--amber);border:none;border-radius:8px;
+    transition:background .12s,transform .08s,box-shadow .12s}
+  .fitbtn:hover{background:var(--amber-soft);box-shadow:0 4px 14px rgba(232,163,61,.3)}
+  .fitbtn:active{transform:translateY(1px)}
+  .fitbtn:disabled{background:var(--char-3);color:#6b6051;cursor:not-allowed;box-shadow:none}
+
+  /* ---------- Map ---------- */
+  #map{height:100vh;width:100%;background:#dfe7e4}
+  @media(max-width:760px){#map{height:100%}}
+  .leaflet-container{font-family:'Manrope',system-ui,sans-serif;background:#e9efe9}
+
+  .pin{display:grid;place-items:center;width:34px;height:34px;
+    background:#fffdf8;border:2px solid var(--char);border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);box-shadow:2px 3px 5px rgba(0,0,0,.3);font-size:16px}
+  .pin span{transform:rotate(45deg)}
+
+  .leaflet-popup-content-wrapper{border-radius:10px;border:1px solid var(--char);
+    box-shadow:0 8px 22px var(--shadow)}
+  .leaflet-popup-content{margin:12px 14px;font-family:'Manrope',sans-serif}
+  .pop b{font-size:15px;font-weight:800;color:var(--ink)}
+  .pop .pl{font-size:11px;color:#7c6c54;margin-top:3px;font-weight:500}
+
+  /* toast */
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%)
+    translateY(140%);z-index:2000;background:var(--char);color:var(--cream);
+    padding:11px 20px;font-size:12px;font-weight:600;border-radius:8px;
+    border:1px solid var(--amber);box-shadow:0 8px 22px var(--shadow);
+    transition:transform .3s;max-width:80vw}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+
+  .list::-webkit-scrollbar,.results::-webkit-scrollbar{width:8px}
+  .list::-webkit-scrollbar-thumb,.results::-webkit-scrollbar-thumb{
+    background:var(--line)}
+
+  /* theme switcher */
+  .themebar{display:flex;align-items:center;gap:10px;margin-top:16px}
+
+  /* show-labels toggle */
+  .toggle{display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;
+    user-select:none}
+  .toggle input{position:absolute;opacity:0;width:0;height:0}
+  .toggle .track{position:relative;width:38px;height:21px;border-radius:11px;
+    background:var(--char-3);border:1px solid var(--line);flex:none;transition:background .15s}
+  .toggle .knob{position:absolute;top:2px;left:2px;width:15px;height:15px;
+    border-radius:50%;background:var(--muted);transition:transform .18s,background .15s}
+  .toggle input:checked + .track{background:var(--amber)}
+  .toggle input:checked + .track .knob{transform:translateX(17px);background:var(--char)}
+  .toggle .tlabel{font-size:12px;font-weight:600;color:var(--cream)}
+  .toggle:hover .track{border-color:var(--muted)}
+
+  /* permanent map labels (Leaflet tooltips) */
+  .leaflet-tooltip.pinlabel{background:#fffdf8;color:var(--ink);border:1px solid var(--char);
+    border-radius:7px;padding:3px 8px;font-family:'Manrope',sans-serif;font-size:11px;
+    font-weight:700;box-shadow:0 3px 8px rgba(0,0,0,.25);white-space:nowrap}
+  .leaflet-tooltip.pinlabel::before{display:none}
+
+  .themelbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);font-weight:700}
+  .swatches{display:flex;gap:7px}
+  .swatches button{width:20px;height:20px;border-radius:50%;cursor:pointer;
+    border:2px solid transparent;padding:0;transition:transform .1s;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+  .swatches button:hover{transform:scale(1.18)}
+  .swatches button.sel{border-color:var(--cream);transform:scale(1.12)}
+
+  /* text color picker */
+  .colorbtn{position:relative;width:22px;height:22px;cursor:pointer;display:inline-block}
+  .colorbtn input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;
+    width:100%;height:100%;border:none;padding:0}
+  .colorbtn .swatch{display:block;width:22px;height:22px;border-radius:6px;
+    border:2px solid var(--line);background:var(--cream);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2);transition:transform .1s}
+  .colorbtn:hover .swatch{transform:scale(1.12)}
+  .resetcolor{border:none;background:none;color:var(--muted);font-family:inherit;
+    font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    text-decoration:underline;font-weight:700;padding:0}
+  .resetcolor:hover{color:var(--amber)}
+
+  /* map context menu */
+  .ctxmenu{position:fixed;z-index:3000;min-width:170px;background:var(--char-3);
+    border:1px solid var(--line);border-radius:9px;padding:5px;display:none;
+    box-shadow:0 12px 30px var(--shadow);font-family:'Manrope',sans-serif}
+  .ctxmenu.show{display:block}
+  .ctxmenu .ci{display:flex;align-items:center;gap:9px;padding:9px 11px;
+    font-size:12.5px;font-weight:600;color:var(--cream);cursor:pointer;
+    border-radius:6px;line-height:1.2}
+  .ctxmenu .ci:hover{background:var(--amber);color:var(--char)}
+  .ctxmenu .ci.danger:hover{background:#c0432e;color:#fff}
+  .ctxmenu .ci svg{flex:none}
+  .ctxmenu .ctxhdr{padding:7px 11px 6px;font-size:9px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);font-weight:700;
+    border-bottom:1px solid var(--line);margin-bottom:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+
+  /* About modal */
+  .modal{position:fixed;inset:0;z-index:4000;display:none;
+    align-items:center;justify-content:center;padding:24px;
+    background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+  .modal.show{display:flex;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal .card{position:relative;width:min(560px,100%);max-height:88vh;overflow:auto;
+    background:linear-gradient(180deg,var(--char-2),var(--char));
+    border:1px solid var(--line);border-radius:16px;padding:34px 34px 28px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);animation:pop .28s cubic-bezier(.2,.9,.3,1.1)}
+  @keyframes pop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  .modal .close{position:absolute;top:16px;right:16px;width:32px;height:32px;
+    border:1px solid var(--line);background:var(--char-3);color:var(--muted);
+    border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;line-height:1}
+  .modal .close:hover{color:var(--amber);border-color:var(--amber)}
+  .modal .badge{display:inline-block;font-size:10px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:8px}
+  .modal h2{font-size:27px;font-weight:800;letter-spacing:-.02em;color:var(--cream)}
+  .modal .tag{font-size:13px;line-height:1.6;color:var(--muted);
+    margin-top:10px;font-weight:500}
+  .techgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  @media(max-width:520px){.techgrid{grid-template-columns:1fr}}
+  .tech{background:var(--char-3);border:1px solid var(--line);border-radius:11px;
+    padding:13px 14px}
+  .tech .th{font-size:13px;font-weight:700;color:var(--amber-soft)}
+  .tech .td{font-size:11.5px;line-height:1.5;color:var(--muted);margin-top:5px;font-weight:500}
+  .modal .foot-note{font-size:11.5px;color:var(--muted);margin-top:20px;
+    line-height:1.6;font-weight:500}
+  .modal code{background:var(--char-3);border:1px solid var(--line);
+    padding:1px 6px;border-radius:5px;font-size:11px;color:var(--cream)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <div class="brand">
+      <div class="kicker">A Field Notebook</div>
+      <h1>Places<br>I've Been</h1>
+      <div class="sub">Search any city worldwide or right-click anywhere on the map to drop a pin. Right-click a pin to edit or remove it.</div>
+      <div class="themebar">
+        <span class="themelbl">Theme</span>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div class="themebar">
+        <span class="themelbl">Custom</span>
+        <label class="colorbtn" title="Background color">
+          <input type="color" id="bgColor">
+          <span class="swatch" id="bgColorSwatch"></span>
+        </label>
+        <label class="colorbtn" title="Accent color">
+          <input type="color" id="accentColor">
+          <span class="swatch" id="accentColorSwatch"></span>
+        </label>
+        <button class="resetcolor" id="themeReset" title="Back to preset themes">reset</button>
+      </div>
+      <div class="themebar">
+        <span class="themelbl">Text</span>
+        <label class="colorbtn" id="textColorBtn" title="Pick panel text color">
+          <input type="color" id="textColor">
+          <span class="swatch" id="textColorSwatch"></span>
+        </label>
+        <button class="resetcolor" id="textColorReset" title="Reset to theme default">reset</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="fld" for="search">Search a city</label>
+      <div class="searchwrap">
+        <input id="search" type="text" placeholder="e.g. Kyoto, Japan" autocomplete="off">
+        <div class="results" id="results"></div>
+      </div>
+
+      <label class="fld">Label (optional)</label>
+      <input id="label" type="text" placeholder="“Best diner of the trip”" style="width:100%;padding:11px 12px;font-family:inherit;font-size:13px;border:1px solid var(--line);background:var(--char-3);color:var(--cream);outline:none;border-radius:8px;font-weight:500">
+
+      <label class="fld">Pick a marker</label>
+      <div class="iconpick" id="iconpick"></div>
+
+      <button id="fitBtn" class="fitbtn" title="Fit all pins in view">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
+        Zoom to Extent
+      </button>
+
+      <label class="toggle" id="labelToggle">
+        <input type="checkbox" id="labelChk">
+        <span class="track"><span class="knob"></span></span>
+        <span class="tlabel">Show all labels on map</span>
+      </label>
+    </div>
+
+    <div class="listhead">
+      <h2>The Collection</h2>
+      <span class="count" id="count">0 pins</span>
+    </div>
+    <div class="list" id="list"></div>
+
+    <div class="foot">
+      <button id="aboutBtn">About</button>
+      <button id="exportBtn">Export JSON</button>
+    </div>
+  </aside>
+
+  <div id="map"></div>
+</div>
+<div id="toast"></div>
+<div class="ctxmenu" id="ctxmenu"></div>
+
+<div class="modal" id="aboutModal">
+  <div class="card">
+    <button class="close" id="aboutClose" title="Close">✕</button>
+    <div class="badge">Field Notebook</div>
+    <h2>Places I've Been</h2>
+    <p class="tag">An interactive world map for pinning everywhere you've wandered — search a city or right-click to drop a marker, label it, theme it, and watch your travels spread across the globe.</p>
+
+    <div class="techgrid">
+      <div class="tech">
+        <div class="th">Leaflet.js</div>
+        <div class="td">The leading open-source web-mapping engine — handles the interactive map, markers, and smooth pan/zoom. No API key required.</div>
+      </div>
+      <div class="tech">
+        <div class="th">CARTO Voyager tiles</div>
+        <div class="td">Clean, modern raster basemap tiles served over OpenStreetMap data.</div>
+      </div>
+      <div class="tech">
+        <div class="th">OpenStreetMap · Nominatim</div>
+        <div class="td">Free worldwide geocoding & reverse-geocoding — turns city searches and map clicks into coordinates and place names.</div>
+      </div>
+      <div class="tech">
+        <div class="th">Vanilla JS · HTML · CSS</div>
+        <div class="td">No frameworks, no build step. CSS custom properties power the six switchable themes.</div>
+      </div>
+      <div class="tech">
+        <div class="th">Browser localStorage</div>
+        <div class="td">Your pins and theme are saved locally in your browser — private to you, persistent between visits.</div>
+      </div>
+      <div class="tech">
+        <div class="th">Manrope</div>
+        <div class="td">A clean, modern sans-serif from Google Fonts for the interface typography.</div>
+      </div>
+    </div>
+
+    <p class="foot-note">A single self-contained <code>index.html</code> — drop it on GitHub Pages and it just works.</p>
+  </div>
+</div>
+
+<script>
+const ICONS = ["📍","🏔️","🏖️","🌆","🍔","🎸","🏛️","🌲","☕","🎡","⛺","🛣️"];
+let selectedIcon = ICONS[0];
+let places = load();
+const markers = {};
+let showLabels = loadShowLabels();
+
+/* ---------- Map ---------- */
+const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true}).setView([30,0],3);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO',
+  subdomains:'abcd',maxZoom:19
+}).addTo(map);
+
+function makeIcon(emoji){
+  return L.divIcon({className:'',html:`<div class="pin"><span>${emoji}</span></div>`,
+    iconSize:[34,34],iconAnchor:[6,30],popupAnchor:[10,-28]});
+}
+
+/* ---------- Render ---------- */
+function renderIconPicker(){
+  const box = document.getElementById('iconpick');
+  box.innerHTML='';
+  ICONS.forEach(ic=>{
+    const b=document.createElement('button');
+    b.textContent=ic;
+    if(ic===selectedIcon) b.classList.add('sel');
+    b.onclick=()=>{selectedIcon=ic;renderIconPicker();};
+    box.appendChild(b);
+  });
+}
+
+function tipText(p){return esc(p.label && p.label.trim() ? p.label : p.name);}
+
+function renderMarker(p){
+  const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.icon)}).addTo(map);
+  m.bindPopup(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
+  m.bindTooltip(tipText(p),{permanent:showLabels,direction:'top',
+    offset:[10,-26],className:'pinlabel',opacity:1});
+  if(!showLabels)m.closeTooltip();
+  m.placeId=p.id;
+  m.on('contextmenu',e=>{
+    L.DomEvent.stopPropagation(e);
+    openCtxMenu(e.originalEvent,{type:'marker',place:p});
+  });
+  markers[p.id]=m;
+}
+
+/* turn all permanent labels on/off */
+function applyShowLabels(){
+  Object.values(markers).forEach(m=>{
+    const t=m.getTooltip();
+    if(!t)return;
+    t.options.permanent=showLabels;
+    m.unbindTooltip();
+    m.bindTooltip(t.getContent(),{permanent:showLabels,direction:'top',
+      offset:[10,-26],className:'pinlabel',opacity:1});
+    if(showLabels)m.openTooltip();else m.closeTooltip();
+  });
+}
+
+function renderList(){
+  const list=document.getElementById('list');
+  document.getElementById('count').textContent=places.length+(places.length===1?' pin':' pins');
+  document.getElementById('fitBtn').disabled = places.length===0;
+  if(!places.length){
+    list.innerHTML='<div class="empty">No pins yet.<br>Search a city above to begin your map.</div>';
+    return;
+  }
+  list.innerHTML='';
+  places.forEach(p=>{
+    const el=document.createElement('div');el.className='place';
+    el.innerHTML=`<span class="emo">${p.icon}</span>
+      <div class="meta"><div class="nm">${esc(p.name)}</div>
+      <div class="lbl">${p.label?esc(p.label):'<i>no label — click ✎</i>'}</div></div>
+      <button class="edit" title="Edit name & label">✎</button>
+      <button class="del" title="Delete">✕</button>`;
+    el.querySelector('.meta').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
+    el.querySelector('.emo').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
+    el.querySelector('.edit').onclick=(e)=>{e.stopPropagation();editPin(p.id);};
+    el.querySelector('.del').onclick=(e)=>{e.stopPropagation();removePlace(p.id);};
+    list.appendChild(el);
+  });
+}
+
+/* ---------- Data ops ---------- */
+function addPlace(name,lat,lng,label,icon,quiet){
+  const p={id:Date.now()+''+Math.floor(Math.random()*999),name,lat,lng,label:label||'',icon};
+  places.push(p);save();renderMarker(p);renderList();
+  if(quiet){markers[p.id].openPopup();}
+  else{map.flyTo([lat,lng],7);markers[p.id].openPopup();}
+  toast(`Pinned ${name}`);
+  return p;
+}
+function removePlace(id){
+  const i=places.findIndex(p=>p.id===id);if(i<0)return;
+  map.removeLayer(markers[id]);delete markers[id];
+  const nm=places[i].name;places.splice(i,1);save();renderList();
+  toast(`Removed ${nm}`);
+}
+
+/* ---------- Zoom to Extent ---------- */
+function fitToExtent(){
+  if(!places.length){toast('No pins to fit yet');return;}
+  if(places.length===1){
+    map.flyTo([places[0].lat,places[0].lng],8);
+    return;
+  }
+  const bounds=L.latLngBounds(places.map(p=>[p.lat,p.lng]));
+  map.flyToBounds(bounds,{padding:[60,60],maxZoom:9,duration:.8});
+}
+document.getElementById('fitBtn').onclick=fitToExtent;
+
+/* ---------- Theme switcher ---------- */
+const THEMES=[
+  {id:'amber', c:'#e8a33d'},
+  {id:'slate', c:'#39c2c9'},
+  {id:'forest',c:'#e0b15a'},
+  {id:'plum',  c:'#d678c6'},
+  {id:'paper', c:'#c0612e'},
+  {id:'mono',  c:'#e8e8e8'},
+];
+function applyTheme(id){
+  document.documentElement.setAttribute('data-theme',id);
+  try{localStorage.setItem('usa_theme_v1',id);}catch(e){}
+  renderSwatches(id);
+  applyTextColor();   // keep any custom text color after theme change
+}
+function renderSwatches(active){
+  const box=document.getElementById('swatches');box.innerHTML='';
+  THEMES.forEach(t=>{
+    const b=document.createElement('button');
+    b.style.background=t.c;b.title=t.id;
+    if(t.id===active)b.classList.add('sel');
+    b.onclick=()=>{ customTheme=null;saveCustomTheme();
+      ['--char','--char-2','--char-3','--line','--amber','--amber-soft','--cream','--muted','--ink','--shadow']
+        .forEach(v=>document.documentElement.style.removeProperty(v));
+      applyTheme(t.id); };
+    box.appendChild(b);
+  });
+}
+
+/* ---------- Custom panel text color ---------- */
+let textColor=loadTextColor();   // null = use theme default
+function themeCream(){
+  // the theme's default --cream, read from a fresh computed style
+  return getComputedStyle(document.documentElement).getPropertyValue('--cream').trim();
+}
+function hexToRgb(h){
+  h=h.replace('#','');
+  if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  const n=parseInt(h,16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function applyTextColor(){
+  const root=document.documentElement;
+  if(textColor){
+    root.style.setProperty('--cream',textColor);
+    const [r,g,b]=hexToRgb(textColor);
+    root.style.setProperty('--muted',`rgba(${r},${g},${b},.62)`);
+  }else{
+    root.style.removeProperty('--cream');
+    root.style.removeProperty('--muted');
+  }
+  // sync the picker UI
+  const eff=textColor||normHex(themeCream());
+  document.getElementById('textColor').value=eff;
+  document.getElementById('textColorSwatch').style.background=textColor||'var(--cream)';
+}
+function normHex(c){
+  // turn computed color (could be hex or rgb()) into #rrggbb for <input type=color>
+  c=c.trim();
+  if(c.startsWith('#')){
+    if(c.length===4)return '#'+c.slice(1).split('').map(x=>x+x).join('');
+    return c;
+  }
+  const m=c.match(/\d+/g);
+  if(!m)return '#000000';
+  return '#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');
+}
+function saveTextColor(){try{
+  if(textColor)localStorage.setItem('usa_textcolor_v1',textColor);
+  else localStorage.removeItem('usa_textcolor_v1');
+}catch(e){}}
+function loadTextColor(){try{return localStorage.getItem('usa_textcolor_v1')||null;}catch(e){return null;}}
+
+document.getElementById('textColor').addEventListener('input',e=>{
+  textColor=e.target.value;saveTextColor();applyTextColor();
+});
+document.getElementById('textColorReset').onclick=()=>{
+  textColor=null;saveTextColor();applyTextColor();toast('Text color reset');
+};
+
+/* ---------- Custom full theme (background + accent) ---------- */
+let customTheme=loadCustomTheme();  // {bg, accent} or null
+
+function clamp(n){return Math.max(0,Math.min(255,Math.round(n)));}
+function rgbToHex(r,g,b){return '#'+[r,g,b].map(x=>clamp(x).toString(16).padStart(2,'0')).join('');}
+function luminance([r,g,b]){return (0.299*r+0.587*g+0.114*b)/255;}
+function mix(c1,c2,t){ // t=0 -> c1, t=1 -> c2
+  return [c1[0]+(c2[0]-c1[0])*t,c1[1]+(c2[1]-c1[1])*t,c1[2]+(c2[2]-c1[2])*t];
+}
+function lighten(rgb,amt){return mix(rgb,[255,255,255],amt);}
+function darken(rgb,amt){return mix(rgb,[0,0,0],amt);}
+
+function deriveTheme(bgHex,accentHex){
+  const bg=hexToRgb(bgHex), accent=hexToRgb(accentHex);
+  const dark=luminance(bg)<0.5;               // is the background dark?
+  // surfaces: nudge toward light on dark themes, toward dark on light themes
+  const s2=dark?lighten(bg,0.06):darken(bg,0.04);
+  const s3=dark?lighten(bg,0.12):darken(bg,0.09);
+  const line=dark?lighten(bg,0.18):darken(bg,0.16);
+  // text: light text on dark bg, dark text on light bg
+  const text=dark?[239,231,218]:[40,33,26];
+  const muted=dark?lighten(bg,0.45):darken(bg,0.42);
+  const accentSoft=dark?lighten(accent,0.22):lighten(accent,0.16);
+  return {
+    '--char':bgHex,
+    '--char-2':rgbToHex(...s2),
+    '--char-3':rgbToHex(...s3),
+    '--line':rgbToHex(...line),
+    '--amber':accentHex,
+    '--amber-soft':rgbToHex(...accentSoft),
+    '--cream':rgbToHex(...text),
+    '--muted':rgbToHex(...muted),
+    '--ink':bgHex,
+    '--shadow':dark?'rgba(0,0,0,.4)':'rgba(90,75,55,.22)',
+  };
+}
+function applyCustomTheme(){
+  const root=document.documentElement;
+  const VARS=['--char','--char-2','--char-3','--line','--amber','--amber-soft','--cream','--muted','--ink','--shadow'];
+  if(customTheme){
+    const d=deriveTheme(customTheme.bg,customTheme.accent);
+    VARS.forEach(v=>root.style.setProperty(v,d[v]));
+    renderSwatches(null);            // no preset is "selected"
+  }else{
+    VARS.forEach(v=>root.style.removeProperty(v));
+  }
+  // reflect in the pickers
+  const bgEff=customTheme?customTheme.bg:normHex(getCSS('--char'));
+  const acEff=customTheme?customTheme.accent:normHex(getCSS('--amber'));
+  document.getElementById('bgColor').value=bgEff;
+  document.getElementById('accentColor').value=acEff;
+  document.getElementById('bgColorSwatch').style.background=bgEff;
+  document.getElementById('accentColorSwatch').style.background=acEff;
+  applyTextColor();                  // user text-color override wins on top
+}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function saveCustomTheme(){try{
+  if(customTheme)localStorage.setItem('usa_customtheme_v1',JSON.stringify(customTheme));
+  else localStorage.removeItem('usa_customtheme_v1');
+}catch(e){}}
+function loadCustomTheme(){try{return JSON.parse(localStorage.getItem('usa_customtheme_v1'))||null;}catch(e){return null;}}
+
+function updateCustom(part,val){
+  // start from current effective colors so changing one keeps the other
+  const base=customTheme||{bg:normHex(getCSS('--char')),accent:normHex(getCSS('--amber'))};
+  customTheme={bg:base.bg,accent:base.accent,[part]:val};
+  saveCustomTheme();applyCustomTheme();
+}
+document.getElementById('bgColor').addEventListener('input',e=>updateCustom('bg',e.target.value));
+document.getElementById('accentColor').addEventListener('input',e=>updateCustom('accent',e.target.value));
+document.getElementById('themeReset').onclick=()=>{
+  customTheme=null;saveCustomTheme();
+  applyTheme(savedTheme);            // re-apply the last preset
+  toast('Back to preset theme');
+};
+
+let savedTheme='amber';
+try{savedTheme=localStorage.getItem('usa_theme_v1')||'amber';}catch(e){}
+applyTheme(savedTheme);
+applyCustomTheme();   // layers a custom theme on top if one is saved
+
+/* ---------- Map right-click context menu ---------- */
+const ctx=document.getElementById('ctxmenu');
+let ctxState=null;
+
+function openCtxMenu(domEvent,state){
+  domEvent.preventDefault();
+  ctxState=state;
+  if(state.type==='marker'){
+    ctx.innerHTML=`
+      <div class="ctxhdr">${esc(state.place.name)}</div>
+      <div class="ci" data-act="zoom">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        Zoom to this pin</div>
+      <div class="ci" data-act="editpin">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        Edit name & label</div>
+      <div class="ci danger" data-act="delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        Delete this pin</div>`;
+  }else{
+    ctx.innerHTML=`
+      <div class="ctxhdr">${state.lat.toFixed(4)}, ${state.lng.toFixed(4)}</div>
+      <div class="ci" data-act="add">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        Add pin here ${selectedIcon}</div>`;
+  }
+  // position, keeping menu on-screen
+  const pad=8, mw=190, mh=state.type==='marker'?132:86;
+  let x=domEvent.clientX, y=domEvent.clientY;
+  if(x+mw+pad>window.innerWidth)x=window.innerWidth-mw-pad;
+  if(y+mh+pad>window.innerHeight)y=window.innerHeight-mh-pad;
+  ctx.style.left=x+'px';ctx.style.top=y+'px';
+  ctx.classList.add('show');
+
+  ctx.querySelectorAll('.ci').forEach(el=>{
+    el.onclick=()=>{handleCtxAction(el.dataset.act);closeCtxMenu();};
+  });
+}
+function closeCtxMenu(){ctx.classList.remove('show');ctxState=null;}
+ctx.addEventListener('click',e=>e.stopPropagation());
+
+function handleCtxAction(act){
+  if(!ctxState)return;
+  if(act==='delete')removePlace(ctxState.place.id);
+  else if(act==='zoom'){map.flyTo([ctxState.place.lat,ctxState.place.lng],9);
+    markers[ctxState.place.id].openPopup();}
+  else if(act==='editpin')editPin(ctxState.place.id);
+  else if(act==='add')addPlaceAt(ctxState.lat,ctxState.lng);
+}
+
+/* ---------- Edit a pin's name & label ---------- */
+function editPin(id){
+  const p=places.find(x=>x.id===id);if(!p)return;
+  const newName=window.prompt('Place name:',p.name);
+  if(newName===null)return;                 // cancelled — leave pin unchanged
+  const newLabel=window.prompt(`Label for “${newName.trim()||p.name}” (optional):`,p.label||'');
+  if(newLabel===null)return;                // cancelled
+  if(newName.trim())p.name=newName.trim();
+  p.label=newLabel.trim();
+  save();
+  const m=markers[id];
+  m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
+  m.setTooltipContent(tipText(p));
+  renderList();
+  toast('Pin updated');
+}
+
+// right-click on empty map
+map.on('contextmenu',e=>{
+  openCtxMenu(e.originalEvent,{type:'map',lat:e.latlng.lat,lng:e.latlng.lng});
+});
+// dismiss
+document.addEventListener('click',()=>closeCtxMenu());
+map.on('movestart zoomstart',()=>closeCtxMenu());
+window.addEventListener('scroll',()=>closeCtxMenu(),true);
+
+/* add a pin at arbitrary coordinates, reverse-geocoding a name */
+async function addPlaceAt(lat,lng){
+  const label=document.getElementById('label').value.trim();
+  const icon=selectedIcon;
+  let name=`Pin (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+  const p=addPlace(name,lat,lng,label,icon,true);
+  document.getElementById('label').value='';
+  // try to give it a real place name
+  try{
+    const url=`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lng}`;
+    const r=await fetch(url,{headers:{'Accept-Language':'en'}});
+    const d=await r.json();
+    if(d&&d.address){
+      const a=d.address;
+      const place=a.city||a.town||a.village||a.hamlet||a.county||a.state||'';
+      const region=a.state&&a.state!==place?`, ${a.state}`:'';
+      const country=a.country?`, ${a.country}`:'';
+      const full=place?place+region+country:'';
+      if(full){
+        p.name=full;save();
+        const m=markers[p.id];
+        m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
+        m.setTooltipContent(tipText(p));
+        renderList();
+      }
+    }
+  }catch(e){/* keep coordinate name */}
+}
+
+/* ---------- Geocoding search (Nominatim / OpenStreetMap) ---------- */
+const search=document.getElementById('search');
+const results=document.getElementById('results');
+let timer=null;
+search.addEventListener('input',()=>{
+  clearTimeout(timer);const q=search.value.trim();
+  if(q.length<3){results.classList.remove('show');return;}
+  results.innerHTML='<div class="hint">searching…</div>';results.classList.add('show');
+  timer=setTimeout(()=>doGeocode(q),350);
+});
+async function doGeocode(q){
+  try{
+    const url=`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
+    const r=await fetch(url,{headers:{'Accept-Language':'en'}});
+    const data=await r.json();
+    if(!data.length){results.innerHTML='<div class="hint">No matches found.</div>';return;}
+    results.innerHTML='';
+    data.forEach(d=>{
+      const div=document.createElement('div');
+      div.textContent=d.display_name;
+      div.onclick=()=>{
+        const a=d.address||{};
+        const place=a.city||a.town||a.village||a.hamlet||a.county||a.state||d.display_name.split(',')[0];
+        const region=a.state&&a.state!==place?`, ${a.state}`:'';
+        const country=a.country?`, ${a.country}`:'';
+        const name=place+region+country;
+        addPlace(name,parseFloat(d.lat),parseFloat(d.lon),
+                 document.getElementById('label').value.trim(),selectedIcon);
+        search.value='';document.getElementById('label').value='';
+        results.classList.remove('show');
+      };
+      results.appendChild(div);
+    });
+  }catch(e){results.innerHTML='<div class="hint">Search failed — check connection.</div>';}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.searchwrap'))results.classList.remove('show');
+});
+
+/* ---------- Persistence ---------- */
+function save(){try{localStorage.setItem('usa_places_v1',JSON.stringify(places));}catch(e){}}
+function load(){try{return JSON.parse(localStorage.getItem('usa_places_v1'))||[];}catch(e){return[];}}
+function saveShowLabels(){try{localStorage.setItem('usa_showlabels_v1',showLabels?'1':'0');}catch(e){}}
+function loadShowLabels(){try{return localStorage.getItem('usa_showlabels_v1')==='1';}catch(e){return false;}}
+
+/* export */
+document.getElementById('exportBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify(places,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='places.json';a.click();toast('Exported places.json');
+};
+
+/* About modal */
+const aboutModal=document.getElementById('aboutModal');
+document.getElementById('aboutBtn').onclick=()=>aboutModal.classList.add('show');
+document.getElementById('aboutClose').onclick=()=>aboutModal.classList.remove('show');
+aboutModal.addEventListener('click',e=>{if(e.target===aboutModal)aboutModal.classList.remove('show');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')aboutModal.classList.remove('show');});
+
+/* ---------- utils ---------- */
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+let tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;
+  t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ---------- label toggle ---------- */
+const labelChk=document.getElementById('labelChk');
+labelChk.checked=showLabels;
+labelChk.addEventListener('change',()=>{
+  showLabels=labelChk.checked;saveShowLabels();applyShowLabels();
+  toast(showLabels?'Labels shown':'Labels hidden');
+});
+
+/* ---------- init ---------- */
+renderIconPicker();
+places.forEach(renderMarker);
+renderList();
+</script>
+</body>
+</html>
