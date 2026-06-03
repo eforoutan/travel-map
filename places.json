@@ -182,5 +182,37 @@
     "lng": -94.2669727,
     "label": "",
     "icon": "📍"
+  },
+  {
+    "id": "1780500006336138",
+    "name": "Shiraz, Fars Province, Iran",
+    "lat": 29.6060218,
+    "lng": 52.5378041,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780500015712865",
+    "name": "Zanjan Province, Iran",
+    "lat": 36.515854,
+    "lng": 48.4777616,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780500038681964",
+    "name": "Bandar-e Anzali, Gilan Province, Iran",
+    "lat": 37.4716356,
+    "lng": 49.4685904,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780500062960503",
+    "name": "دهستان اوشیان, Gilan Province, Iran",
+    "lat": 36.9743391,
+    "lng": 50.57079,
+    "label": "",
+    "icon": "📍"
   }
 ]
