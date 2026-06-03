@@ -1,1 +1,106 @@
-[]
+[
+  {
+    "id": "1780498748582870",
+    "name": "Stillwater, Oklahoma, United States",
+    "lat": 36.1156306,
+    "lng": -97.0585717,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498792439630",
+    "name": "Laredo, Texas, United States",
+    "lat": 27.5079211,
+    "lng": -99.5069834,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498802695860",
+    "name": "New York, United States",
+    "lat": 40.7127281,
+    "lng": -74.0060152,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498815991733",
+    "name": "Washington, District of Columbia, United States",
+    "lat": 38.8950982,
+    "lng": -77.0363849,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "178049882381514",
+    "name": "Detroit, Michigan, United States",
+    "lat": 42.3315509,
+    "lng": -83.0466403,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498843160892",
+    "name": "Chicago, Illinois, United States",
+    "lat": 41.8755616,
+    "lng": -87.6244212,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498862888873",
+    "name": "San Diego, California, United States",
+    "lat": 32.7174202,
+    "lng": -117.162772,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498874624530",
+    "name": "Dallas, Texas, United States",
+    "lat": 32.7762719,
+    "lng": -96.7968559,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "178049889293126",
+    "name": "Boulder, Colorado, United States",
+    "lat": 40.0149856,
+    "lng": -105.270545,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498899153529",
+    "name": "Denver, Colorado, United States",
+    "lat": 39.7392364,
+    "lng": -104.984862,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498908961403",
+    "name": "Estes Park, Colorado, United States",
+    "lat": 40.3771926,
+    "lng": -105.523216,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498925241600",
+    "name": "Los Angeles, California, United States",
+    "lat": 34.0536909,
+    "lng": -118.242766,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498955474215",
+    "name": "Bassett, Nebraska, United States",
+    "lat": 42.5867856,
+    "lng": -99.5377243,
+    "label": "",
+    "icon": "📍"
+  }
+]
