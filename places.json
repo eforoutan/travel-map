@@ -1,7 +1,7 @@
 [
   {
     "id": "1780498748582870",
-    "name": "Stillwater, Oklahoma, United States",
+    "name": "Stillwater, Oklahoma",
     "lat": 36.1156306,
     "lng": -97.0585717,
     "label": "",
@@ -17,7 +17,7 @@
   },
   {
     "id": "1780498802695860",
-    "name": "New York, United States",
+    "name": "New York",
     "lat": 40.7127281,
     "lng": -74.0060152,
     "label": "",
@@ -25,7 +25,7 @@
   },
   {
     "id": "1780498815991733",
-    "name": "Washington, District of Columbia, United States",
+    "name": "Washington, DC",
     "lat": 38.8950982,
     "lng": -77.0363849,
     "label": "",
@@ -33,7 +33,7 @@
   },
   {
     "id": "178049882381514",
-    "name": "Detroit, Michigan, United States",
+    "name": "Detroit, Michigan",
     "lat": 42.3315509,
     "lng": -83.0466403,
     "label": "",
@@ -41,7 +41,7 @@
   },
   {
     "id": "1780498843160892",
-    "name": "Chicago, Illinois, United States",
+    "name": "Chicago, Illinois",
     "lat": 41.8755616,
     "lng": -87.6244212,
     "label": "",
@@ -97,9 +97,73 @@
   },
   {
     "id": "1780498955474215",
-    "name": "Bassett, Nebraska, United States",
+    "name": "Bassett, Nebraska",
     "lat": 42.5867856,
     "lng": -99.5377243,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499143252744",
+    "name": "Dubai Emirate, UAE",
+    "lat": 25.0742823,
+    "lng": 55.1885387,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499221629664",
+    "name": "Mexico City, Mexico",
+    "lat": 19.3207722,
+    "lng": -99.1514678,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499237150480",
+    "name": "Paris",
+    "lat": 48.8534951,
+    "lng": 2.3483915,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499260350346",
+    "name": "Frankfurt, Hesse, Germany",
+    "lat": 50.1106444,
+    "lng": 8.6820917,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499267382532",
+    "name": "Stuttgart, Baden-Württemberg, Germany",
+    "lat": 48.7784485,
+    "lng": 9.1800132,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499282166361",
+    "name": "Isfahan, Isfahan Province, Iran",
+    "lat": 32.6707877,
+    "lng": 51.6650002,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499291494819",
+    "name": "Tehran, Tehran Province, Iran",
+    "lat": 35.6892523,
+    "lng": 51.3896004,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780499300895773",
+    "name": "Shahreza, Isfahan Province, Iran",
+    "lat": 32.0116032,
+    "lng": 51.8651719,
     "label": "",
     "icon": "📍"
   }
