@@ -9,7 +9,7 @@
   },
   {
     "id": "1780498792439630",
-    "name": "Laredo, Texas, United States",
+    "name": "Laredo, Texas",
     "lat": 27.5079211,
     "lng": -99.5069834,
     "label": "",
@@ -204,6 +204,14 @@
     "name": "دهستان اوشیان, Gilan Province, Iran",
     "lat": 36.9743391,
     "lng": 50.57079,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780501101461154",
+    "name": "Tulsa, Oklahoma",
+    "lat": 36.1563122,
+    "lng": -95.9927516,
     "label": "",
     "icon": "📍"
   }
