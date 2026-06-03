@@ -80,14 +80,6 @@
     "icon": "📍"
   },
   {
-    "id": "1780498925241600",
-    "name": "Los Angeles, California",
-    "lat": 34.0536909,
-    "lng": -118.242766,
-    "label": "",
-    "icon": "📍"
-  },
-  {
     "id": "1780498955474215",
     "name": "Bassett, Nebraska",
     "lat": 42.5867856,
@@ -228,6 +220,14 @@
     "name": "Joseph H. Williams Tallgrass Prairie Preserve",
     "lat": 36.814308,
     "lng": -96.366586,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780510033784162",
+    "name": "Guymon, Oklahoma",
+    "lat": 36.6814131,
+    "lng": -101.4814241,
     "label": "",
     "icon": "📍"
   }
