@@ -60,11 +60,9 @@
     color:var(--cream);
     overflow:hidden;
   }
-  /* ---------- Layout ---------- */
-  .app{display:grid;grid-template-columns:340px 1fr;height:100vh}
-  @media(max-width:760px){
-    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  }
+  /* ---------- Layout (desktop) ---------- */
+  .app{display:grid;grid-template-columns:340px 1fr;height:100vh;height:100dvh}
+  .sheet-handle,.fab{display:none}   /* mobile-only controls, hidden on desktop */
 
   /* ---------- Sidebar ---------- */
   .panel{
@@ -158,8 +156,7 @@
   .fitbtn:disabled{background:var(--char-3);color:#6b6051;cursor:not-allowed;box-shadow:none}
 
   /* ---------- Map ---------- */
-  #map{height:100vh;width:100%;background:#dfe7e4}
-  @media(max-width:760px){#map{height:100%}}
+  #map{height:100vh;height:100dvh;width:100%;background:#dfe7e4}
   .leaflet-container{font-family:'Manrope',system-ui,sans-serif;background:#e9efe9}
 
   .pin{display:grid;place-items:center;width:34px;height:34px;
@@ -283,15 +280,113 @@
 
   .datastatus{padding:10px 24px 0;font-size:10px;letter-spacing:.04em;
     color:var(--muted);font-weight:600;text-align:center}
+
+  /* ============================================================
+     MOBILE — map fills screen; panel becomes a bottom sheet
+     ============================================================ */
+  @media(max-width:760px){
+    .app{display:block;height:100dvh;position:relative}
+
+    /* map sits behind everything, full screen */
+    #map{position:absolute;inset:0;height:100dvh;z-index:1}
+
+    /* floating button to open the panel */
+    .fab{display:flex;position:fixed;z-index:1400;right:14px;
+      bottom:calc(16px + env(safe-area-inset-bottom));
+      width:56px;height:56px;border-radius:18px;border:none;cursor:pointer;
+      align-items:center;justify-content:center;
+      background:var(--amber);color:var(--char);
+      box-shadow:0 6px 20px rgba(0,0,0,.35);transition:transform .12s}
+    .fab:active{transform:scale(.94)}
+    .fab svg{width:24px;height:24px}
+
+    /* the panel becomes a draggable bottom sheet */
+    .panel{
+      position:fixed;left:0;right:0;bottom:0;z-index:1500;
+      height:86dvh;max-height:86dvh;
+      border-right:none;border-top:1px solid var(--line);
+      border-radius:20px 20px 0 0;
+      box-shadow:0 -10px 40px rgba(0,0,0,.4);
+      transform:translateY(100%);
+      transition:transform .32s cubic-bezier(.32,.72,0,1);
+      padding-bottom:env(safe-area-inset-bottom);
+    }
+    .panel.open{transform:translateY(0)}
+
+    /* grab handle bar at the top of the sheet */
+    .sheet-handle{display:flex;flex-direction:column;align-items:center;
+      padding:11px 0 5px;cursor:grab;touch-action:none;flex:none}
+    .sheet-handle .bar{width:42px;height:5px;border-radius:3px;
+      background:var(--line)}
+    .sheet-handle .peeklabel{display:none}
+
+    /* tighten the brand so the sheet isn't dominated by the header */
+    .brand{padding:6px 20px 14px;border-bottom:1px solid var(--line)}
+    .brand .kicker{font-size:10px}
+    .brand h1{font-size:21px;display:inline}
+    .brand h1 br{display:none}
+    .brand .sub{font-size:11.5px;margin-top:8px}
+
+    .controls{padding:14px 20px 6px}
+    /* prevent mobile browsers from zooming when focusing inputs */
+    #search,#label{font-size:16px}
+
+    .listhead{padding:14px 20px 4px}
+    .list{padding:4px 14px 14px;-webkit-overflow-scrolling:touch}
+    .place{padding:12px 12px}          /* bigger touch targets */
+    .place .edit,.place .del{font-size:17px;padding:6px 7px}
+
+    .iconpick button{width:42px;height:42px;font-size:20px}
+    .swatches button{width:24px;height:24px}
+    .colorbtn,.colorbtn .swatch{width:26px;height:26px}
+
+    .fitbtn{padding:13px 12px}
+    .toggle{margin-top:16px}
+    .toggle .track{width:44px;height:25px}
+    .toggle .knob{width:19px;height:19px}
+    .toggle input:checked + .track .knob{transform:translateX(19px)}
+
+    .foot{padding:14px 20px calc(14px + env(safe-area-inset-bottom))}
+    .foot button{font-size:12px}
+
+    /* darkening scrim behind the open sheet */
+    .scrim{display:none;position:fixed;inset:0;z-index:1450;
+      background:rgba(0,0,0,.4);opacity:0;transition:opacity .3s}
+    .scrim.show{display:block;opacity:1}
+
+    /* modals: near full-width on phones */
+    .modal{padding:0;align-items:flex-end}
+    .modal .card{width:100%;max-height:90dvh;border-radius:18px 18px 0 0;
+      padding:26px 22px calc(22px + env(safe-area-inset-bottom))}
+    .techgrid{grid-template-columns:1fr}
+
+    /* map controls clear of the FAB / sheet */
+    .leaflet-bottom.leaflet-right{margin-bottom:78px}
+  }
+
+  /* very narrow phones (S22 Ultra portrait ~360-412px) */
+  @media(max-width:412px){
+    .brand h1{font-size:19px}
+    .iconpick{gap:6px}
+    .iconpick button{width:40px;height:40px}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    .panel,.scrim,.fab{transition:none}
+  }
 </style>
 </head>
 <body>
 <div class="app">
-  <aside class="panel">
+  <aside class="panel" id="panel">
+    <div class="sheet-handle" id="sheetHandle">
+      <span class="bar"></span>
+      <span class="peeklabel" id="peekLabel">Tap to open controls</span>
+    </div>
     <div class="brand">
       <div class="kicker">A Field Notebook</div>
       <h1>Places<br>I've Been</h1>
-      <div class="sub">Search any city worldwide or right-click anywhere on the map to drop a pin. Right-click a pin to edit or remove it.</div>
+      <div class="sub">Search any city worldwide, or right-click (long-press on mobile) the map to drop a pin. Right-click or use the ✎ to edit a pin.</div>
       <div class="themebar">
         <span class="themelbl">Theme</span>
         <div class="swatches" id="swatches"></div>
@@ -357,6 +452,10 @@
   </aside>
 
   <div id="map"></div>
+  <div class="scrim" id="scrim"></div>
+  <button class="fab" id="fab" title="Open controls" aria-label="Open controls">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+  </button>
 </div>
 <div id="toast"></div>
 <div class="ctxmenu" id="ctxmenu"></div>
@@ -824,6 +923,7 @@ async function doGeocode(q){
                  document.getElementById('label').value.trim(),selectedIcon);
         search.value='';document.getElementById('label').value='';
         results.classList.remove('show');
+        autoCloseOnAction();
       };
       results.appendChild(div);
     });
@@ -911,6 +1011,93 @@ labelChk.addEventListener('change',()=>{
   showLabels=labelChk.checked;saveShowLabels();applyShowLabels();
   toast(showLabels?'Labels shown':'Labels hidden');
 });
+
+/* ---------- Mobile bottom sheet ---------- */
+const panel=document.getElementById('panel');
+const scrim=document.getElementById('scrim');
+const fab=document.getElementById('fab');
+const sheetHandle=document.getElementById('sheetHandle');
+const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
+
+function openSheet(){
+  if(!isMobile())return;
+  panel.classList.add('open');
+  scrim.classList.add('show');
+  fab.style.display='none';
+}
+function closeSheet(){
+  panel.classList.remove('open');
+  scrim.classList.remove('show');
+  if(isMobile())fab.style.display='flex';
+}
+fab.addEventListener('click',openSheet);
+scrim.addEventListener('click',closeSheet);
+
+/* tap handle toggles; drag handle down dismisses */
+let dragStartY=null,dragDelta=0;
+sheetHandle.addEventListener('click',()=>{
+  if(dragDelta>6)return;                 // ignore click that ended a drag
+  closeSheet();
+});
+sheetHandle.addEventListener('touchstart',e=>{
+  dragStartY=e.touches[0].clientY;dragDelta=0;
+  panel.style.transition='none';
+},{passive:true});
+sheetHandle.addEventListener('touchmove',e=>{
+  if(dragStartY===null)return;
+  dragDelta=e.touches[0].clientY-dragStartY;
+  if(dragDelta>0)panel.style.transform=`translateY(${dragDelta}px)`;
+},{passive:true});
+sheetHandle.addEventListener('touchend',()=>{
+  panel.style.transition='';panel.style.transform='';
+  if(dragDelta>90)closeSheet();          // dragged down far enough -> close
+  dragStartY=null;
+});
+
+/* after the map resizes (sheet open/close / rotate), tell Leaflet */
+function fixMapSize(){setTimeout(()=>map.invalidateSize(),350);}
+panel.addEventListener('transitionend',e=>{if(e.propertyName==='transform')fixMapSize();});
+window.addEventListener('resize',()=>{map.invalidateSize();syncMobileState();});
+window.addEventListener('orientationchange',fixMapSize);
+
+/* keep the sheet in the right resting state for the current viewport */
+function syncMobileState(){
+  if(isMobile()){
+    if(!panel.classList.contains('open'))fab.style.display='flex';
+  }else{
+    panel.classList.remove('open');
+    scrim.classList.remove('show');
+    panel.style.transform='';
+    fab.style.display='none';
+  }
+}
+syncMobileState();
+
+/* when a city is picked or a pin added on mobile, close the sheet so the map is visible */
+function autoCloseOnAction(){if(isMobile())closeSheet();}
+
+/* ---------- Long-press = "right-click" on touch devices ---------- */
+let lpTimer=null,lpStart=null,lpMoved=false;
+const mapEl=document.getElementById('map');
+function clearLP(){if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}}
+mapEl.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];lpStart={x:t.clientX,y:t.clientY};lpMoved=false;
+  clearLP();
+  lpTimer=setTimeout(()=>{
+    // translate screen point to map latlng and open the add menu
+    const pt=map.containerPointToLatLng(
+      map.mouseEventToContainerPoint({clientX:lpStart.x,clientY:lpStart.y}));
+    openCtxMenu({clientX:lpStart.x,clientY:lpStart.y,preventDefault(){}},
+      {type:'map',lat:pt.lat,lng:pt.lng});
+    if(navigator.vibrate)navigator.vibrate(15);
+  },550);
+},{passive:true});
+mapEl.addEventListener('touchmove',e=>{
+  if(!lpStart)return;const t=e.touches[0];
+  if(Math.abs(t.clientX-lpStart.x)>10||Math.abs(t.clientY-lpStart.y)>10){lpMoved=true;clearLP();}
+},{passive:true});
+mapEl.addEventListener('touchend',clearLP,{passive:true});
 
 /* ---------- init ---------- */
 renderIconPicker();
