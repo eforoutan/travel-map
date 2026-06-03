@@ -6,5 +6,29 @@
     "lng": -97.0585717,
     "label": "",
     "icon": "📍"
+  },
+  {
+    "id": "1780498475258129",
+    "name": "Tooele County, Utah, United States",
+    "lat": 40.17047886718111,
+    "lng": -113.68652343750001,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498478053142",
+    "name": "Town of Kingsbury, New York, United States",
+    "lat": 43.32517767999296,
+    "lng": -73.56445312500001,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780498480499302",
+    "name": "Mason County, Washington, United States",
+    "lat": 47.39834920035926,
+    "lng": -122.95898437500001,
+    "label": "",
+    "icon": "📍"
   }
 ]
