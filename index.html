@@ -118,7 +118,25 @@
   .minibtn:disabled{opacity:.45;cursor:not-allowed}
   .minibtn svg{width:13px;height:13px}
 
-  .list{flex:1;overflow:auto;padding:0 8px 10px}
+  .list{flex:1;overflow:auto;padding:6px 8px 10px}
+
+  /* continent groups */
+  .grp{margin-bottom:2px}
+  .grphead{display:flex;align-items:center;gap:8px;padding:9px 8px;cursor:pointer;
+    border-radius:6px;user-select:none;transition:background .1s;position:sticky;top:0;
+    background:var(--bg);z-index:2}
+  .grphead:hover{background:var(--bg-2)}
+  .grphead .chev{width:15px;height:15px;color:var(--ink-2);flex:none;
+    transition:transform .18s}
+  .grphead.collapsed .chev{transform:rotate(0deg)}
+  .grphead:not(.collapsed) .chev{transform:rotate(90deg)}
+  .grphead .gemoji{font-size:15px;line-height:1}
+  .grphead .gname{flex:1;font-size:12.5px;font-weight:700;color:var(--ink);
+    letter-spacing:.01em}
+  .grphead .gcount{font-size:11px;font-weight:700;color:var(--accent);
+    background:var(--bg-3);border-radius:10px;padding:1px 8px;min-width:22px;text-align:center}
+  .grpbody{padding-left:6px;border-left:2px solid var(--bg-3);margin-left:13px}
+
   .place{
     display:flex;align-items:center;gap:9px;padding:9px 8px;
     border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s}
@@ -567,6 +585,45 @@
 
 <script>
 const DEFAULT_ICON="📍";   // single fixed marker; existing pins keep their stored icon field
+
+/* ---------- Continent classification from coordinates ----------
+   Broad coordinate logic; first match wins. Good enough for grouping pins. */
+function continentOf(lat,lng){
+  let x=lng; if(x>180)x-=360; if(x<-180)x+=360;
+  const y=lat;
+  // Antarctica
+  if(y<=-60) return 'Antarctica';
+  // Oceania (Australia, NZ, Pacific)
+  if(x>=110 && x<=180 && y<=0) return 'Oceania';
+  if(x>=112 && x<=155 && y<=-10) return 'Oceania';
+  // Americas (western hemisphere)
+  if(x<=-30){
+    if(y<=13 && x>=-93) return 'South America';   // S. America incl. Panama-ish
+    if(y< 13 && x< -34) return 'South America';
+    return 'North America';                        // everything else west = N. America
+  }
+  // Asia — claim the Middle East / Iran / Russia / India / SE Asia BEFORE Europe & Africa.
+  // Asia spans roughly lng 26..180. Carve Europe and Africa out of the west edge.
+  if(x>=26 && x<=180){
+    // Europe: high-latitude west (incl. European Russia to the Urals ~60E)
+    if(y>=38 && x<=42) return 'Europe';
+    if(y>=45 && x<=60) return 'Europe';
+    // Africa: NE Africa (Egypt/Sudan/Horn). Keep its eastern edge off the Arabian/Iranian
+    // plate — Africa only reaches ~43E above the Horn, and the Horn is below ~18N.
+    if(y<=33 && x<=43) return 'Africa';            // Egypt, Sudan, E. Africa
+    if(y<=18 && x<=51) return 'Africa';            // Horn of Africa
+    return 'Asia';                                 // Arabia, Iran, India, Russia, SE Asia, etc.
+  }
+  // Western strip lng -30..26: Europe (north) vs Africa (south)
+  if(x>-30 && x<26){
+    if(y>=36) return 'Europe';
+    return 'Africa';
+  }
+  return 'Other';
+}
+const CONTINENT_ORDER=['North America','South America','Europe','Africa','Asia','Oceania','Antarctica','Other'];
+const CONTINENT_EMOJI={'North America':'🌎','South America':'🌎','Europe':'🌍','Africa':'🌍','Asia':'🌏','Oceania':'🌏','Antarctica':'🧊','Other':'📍'};
+
 let places = load();
 const markers = {};
 let showLabels = loadShowLabels();
@@ -629,6 +686,10 @@ function applyShowLabels(){
   });
 }
 
+/* which continent groups are collapsed (persisted in-session) */
+const collapsedGroups = (()=>{try{return new Set(JSON.parse(localStorage.getItem('pib_collapsed_v1'))||[]);}catch(e){return new Set();}})();
+function saveCollapsed(){try{localStorage.setItem('pib_collapsed_v1',JSON.stringify([...collapsedGroups]));}catch(e){}}
+
 function renderList(){
   const list=document.getElementById('list');
   document.getElementById('count').textContent=places.length;
@@ -637,19 +698,52 @@ function renderList(){
     list.innerHTML='<div class="empty">No pins yet.<br>Search a city or right-click the map to begin.</div>';
     return;
   }
-  list.innerHTML='';
+  // group by continent
+  const groups={};
   places.forEach(p=>{
-    const el=document.createElement('div');el.className='place';
-    el.innerHTML=`<span class="dot"></span>
-      <div class="meta"><div class="nm">${esc(p.name)}</div>
-      <div class="lbl">${p.label?esc(p.label):'<i>no label — click ✎</i>'}</div></div>
-      <button class="act edit" title="Edit name & label">✎</button>
-      <button class="act del" title="Delete">✕</button>`;
-    el.querySelector('.meta').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
-    el.querySelector('.dot').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
-    el.querySelector('.edit').onclick=(e)=>{e.stopPropagation();editPin(p.id);};
-    el.querySelector('.del').onclick=(e)=>{e.stopPropagation();removePlace(p.id);};
-    list.appendChild(el);
+    const c=continentOf(p.lat,p.lng);
+    (groups[c]||(groups[c]=[])).push(p);
+  });
+  const order=CONTINENT_ORDER.filter(c=>groups[c]);
+  list.innerHTML='';
+  order.forEach(cont=>{
+    const items=groups[cont];
+    const collapsed=collapsedGroups.has(cont);
+
+    const grp=document.createElement('div');grp.className='grp';
+
+    const head=document.createElement('div');
+    head.className='grphead'+(collapsed?' collapsed':'');
+    head.innerHTML=`
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      <span class="gemoji">${CONTINENT_EMOJI[cont]||'📍'}</span>
+      <span class="gname">${cont}</span>
+      <span class="gcount">${items.length}</span>`;
+    head.onclick=()=>{
+      if(collapsedGroups.has(cont))collapsedGroups.delete(cont);
+      else collapsedGroups.add(cont);
+      saveCollapsed();renderList();
+    };
+    grp.appendChild(head);
+
+    if(!collapsed){
+      const body=document.createElement('div');body.className='grpbody';
+      items.forEach(p=>{
+        const el=document.createElement('div');el.className='place';
+        el.innerHTML=`<span class="dot"></span>
+          <div class="meta"><div class="nm">${esc(p.name)}</div>
+          <div class="lbl">${p.label?esc(p.label):'<i>no label — click ✎</i>'}</div></div>
+          <button class="act edit" title="Edit name & label">✎</button>
+          <button class="act del" title="Delete">✕</button>`;
+        el.querySelector('.meta').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
+        el.querySelector('.dot').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
+        el.querySelector('.edit').onclick=(e)=>{e.stopPropagation();editPin(p.id);};
+        el.querySelector('.del').onclick=(e)=>{e.stopPropagation();removePlace(p.id);};
+        body.appendChild(el);
+      });
+      grp.appendChild(body);
+    }
+    list.appendChild(grp);
   });
 }
 
