@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -15,476 +15,424 @@
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <style>
-  /* default = amber (warm charcoal + amber) */
-  :root,[data-theme="amber"]{
-    --char:#26221d; --char-2:#2f2a24; --char-3:#3a342c;
-    --amber:#e8a33d; --amber-soft:#f0bd6b;
-    --cream:#efe7da; --muted:#a99c87; --line:#433c33;
-    --ink:#26221d; --shadow:rgba(0,0,0,.35);
-  }
-  [data-theme="slate"]{
-    --char:#161c24; --char-2:#1d2530; --char-3:#27313f;
-    --amber:#39c2c9; --amber-soft:#5fd8de;
-    --cream:#e6eef4; --muted:#8b9bab; --line:#33404f;
-    --ink:#161c24; --shadow:rgba(0,0,0,.4);
-  }
-  [data-theme="forest"]{
-    --char:#1c2a22; --char-2:#23342a; --char-3:#2d4135;
-    --amber:#e0b15a; --amber-soft:#edc880;
-    --cream:#eaf0e6; --muted:#94a896; --line:#36493d;
-    --ink:#1c2a22; --shadow:rgba(0,0,0,.35);
-  }
-  [data-theme="plum"]{
-    --char:#211726; --char-2:#2b1f31; --char-3:#382740;
-    --amber:#d678c6; --amber-soft:#e79ddb;
-    --cream:#f0e6f0; --muted:#a892ab; --line:#43314c;
-    --ink:#211726; --shadow:rgba(0,0,0,.4);
-  }
-  [data-theme="paper"]{
-    --char:#f3ede2; --char-2:#ebe3d4; --char-3:#fdfaf3;
-    --amber:#c0612e; --amber-soft:#d9824f;
-    --cream:#332a20; --muted:#8a7a63; --line:#d8ccb8;
-    --ink:#332a20; --shadow:rgba(120,100,70,.22);
-  }
-  [data-theme="mono"]{
-    --char:#1a1a1a; --char-2:#222; --char-3:#2c2c2c;
-    --amber:#e8e8e8; --amber-soft:#fff;
-    --cream:#f2f2f2; --muted:#9a9a9a; --line:#3a3a3a;
-    --ink:#1a1a1a; --shadow:rgba(0,0,0,.45);
+  /* ---- ArcGIS-style light theme (Esri light-gray canvas) ---- */
+  :root{
+    --accent:#0079c1;          /* Esri blue */
+    --accent-dark:#005e95;
+    --bg:#ffffff;              /* panel background */
+    --bg-2:#f4f5f6;            /* subtle surface */
+    --bg-3:#e9ebee;            /* hover / inputs */
+    --ink:#2b2b2b;             /* primary text */
+    --ink-2:#6b7178;           /* secondary text */
+    --line:#d7dbe0;            /* borders */
+    --line-strong:#c2c7cd;
+    --danger:#c0392b;
+    --ok:#2e7d4f;
+    --map-bg:#eceef0;
+    --shadow:0 1px 3px rgba(20,30,40,.12),0 4px 16px rgba(20,30,40,.08);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    font-family:'Manrope',system-ui,sans-serif;
-    background:var(--char);
-    color:var(--cream);
-    overflow:hidden;
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    -webkit-font-smoothing:antialiased;
   }
-  /* ---------- Layout (desktop) ---------- */
-  .app{display:grid;grid-template-columns:340px 1fr;height:100vh;height:100dvh}
-  .sheet-handle,.fab{display:none}   /* mobile-only controls, hidden on desktop */
 
-  /* ---------- Sidebar ---------- */
+  /* ---------- Layout ---------- */
+  .app{display:grid;grid-template-columns:312px 1fr;height:100vh;height:100dvh}
+  .sheet-handle,.fab{display:none}
+
+  /* ---------- Panel ---------- */
   .panel{
-    background:linear-gradient(180deg,var(--char-2),var(--char));
-    border-right:1px solid var(--line);
-    display:flex;flex-direction:column;
-    overflow:hidden;position:relative;z-index:1000;
+    background:var(--bg);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;overflow:hidden;
+    position:relative;z-index:1000;
   }
-  .brand{padding:26px 24px 20px;border-bottom:1px solid var(--line)}
-  .brand .kicker{
-    font-size:11px;letter-spacing:.28em;text-transform:uppercase;
-    color:var(--amber);font-weight:700;
-  }
-  .brand h1{
-    font-weight:800;
-    font-size:30px;line-height:1.05;margin-top:8px;letter-spacing:-.02em;
-    color:var(--cream);
-  }
-  .brand .sub{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55;font-weight:500}
 
-  .controls{padding:20px 24px 8px}
-  label.fld{display:block;font-size:10px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--muted);margin:14px 0 7px;font-weight:700}
-  .searchwrap{position:relative}
+  /* header bar — like an ArcGIS app header */
+  .topbar{
+    display:flex;align-items:center;gap:10px;
+    padding:0 14px;height:52px;flex:none;
+    background:var(--accent);color:#fff;
+  }
+  .topbar .logo{
+    width:26px;height:26px;border-radius:5px;background:rgba(255,255,255,.16);
+    display:grid;place-items:center;flex:none}
+  .topbar .logo svg{width:16px;height:16px}
+  .topbar .ttl{font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;
+    font-size:16px;letter-spacing:.01em;line-height:1;flex:1;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .iconbtn{
+    width:32px;height:32px;border-radius:6px;border:none;cursor:pointer;
+    background:transparent;color:#fff;display:grid;place-items:center;
+    transition:background .12s}
+  .topbar .iconbtn:hover{background:rgba(255,255,255,.18)}
+  .topbar .iconbtn svg{width:17px;height:17px}
+
+  /* search */
+  .searchwrap{position:relative;padding:12px 14px 10px;flex:none;border-bottom:1px solid var(--line)}
+  .searchbox{position:relative}
+  .searchbox svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    width:16px;height:16px;color:var(--ink-2);pointer-events:none}
   #search{
-    width:100%;padding:11px 12px;font-family:inherit;
-    font-size:13px;border:1px solid var(--line);background:var(--char-3);
-    color:var(--cream);outline:none;border-radius:8px;font-weight:500;
-  }
-  #search::placeholder{color:#8a7d68}
-  #search:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+    width:100%;padding:10px 12px 10px 34px;font-family:inherit;font-size:13.5px;
+    border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+    outline:none;border-radius:6px;font-weight:500}
+  #search::placeholder{color:#9aa0a7}
+  #search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,121,193,.15)}
   .results{
-    position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:1200;
-    background:var(--char-3);border:1px solid var(--line);max-height:230px;
-    overflow:auto;display:none;box-shadow:0 10px 26px var(--shadow);border-radius:8px}
+    position:absolute;top:calc(100% - 4px);left:14px;right:14px;z-index:1200;
+    background:#fff;border:1px solid var(--line-strong);max-height:250px;
+    overflow:auto;display:none;box-shadow:var(--shadow);border-radius:6px}
   .results.show{display:block}
-  .results div{padding:9px 12px;font-size:12px;cursor:pointer;
-    border-bottom:1px solid var(--line);line-height:1.35;color:var(--cream)}
+  .results div{padding:9px 12px;font-size:12.5px;cursor:pointer;
+    border-bottom:1px solid var(--line);line-height:1.4;color:var(--ink)}
   .results div:last-child{border-bottom:none}
-  .results div:hover{background:var(--amber);color:var(--char)}
-  .results .hint{cursor:default;color:var(--muted);font-style:italic}
+  .results div:hover{background:var(--bg-2)}
+  .results .hint{cursor:default;color:var(--ink-2);font-style:italic}
 
-  .iconpick{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
-  .iconpick button{
-    width:38px;height:38px;border:1px solid var(--line);background:var(--char-3);
-    font-size:18px;cursor:pointer;display:grid;place-items:center;border-radius:8px;
-    transition:transform .08s,border-color .1s,background .1s;line-height:1}
-  .iconpick button:hover{transform:translateY(-2px);border-color:var(--muted)}
-  .iconpick button.sel{border-color:var(--amber);background:rgba(232,163,61,.16);
-    box-shadow:0 0 0 2px rgba(232,163,61,.25)}
+  /* label input row */
+  .addrow{padding:12px 14px;flex:none;border-bottom:1px solid var(--line)}
+  .fld{display:block;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-2);margin-bottom:6px;font-weight:700}
+  #label{
+    width:100%;padding:9px 12px;font-family:inherit;font-size:13px;
+    border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+    outline:none;border-radius:6px;font-weight:500}
+  #label::placeholder{color:#9aa0a7}
+  #label:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,121,193,.15)}
+  .hinttext{font-size:11px;color:var(--ink-2);margin-top:8px;line-height:1.5}
 
   /* list */
-  .listhead{padding:18px 24px 6px;display:flex;justify-content:space-between;
-    align-items:baseline;border-top:1px solid var(--line);margin-top:10px}
-  .listhead h2{font-size:16px;font-weight:700;color:var(--cream)}
-  .count{font-size:11px;color:var(--amber);font-weight:700}
-  .list{flex:1;overflow:auto;padding:6px 16px 18px}
+  .listhead{display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px 8px;flex:none}
+  .listhead h2{font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--ink-2)}
+  .listhead .right{display:flex;align-items:center;gap:8px}
+  .count{font-size:11px;color:var(--accent);font-weight:700}
+  .minibtn{border:1px solid var(--line-strong);background:#fff;color:var(--ink-2);
+    border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;
+    padding:4px 8px;display:flex;align-items:center;gap:4px;transition:.12s}
+  .minibtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .minibtn:disabled{opacity:.45;cursor:not-allowed}
+  .minibtn svg{width:13px;height:13px}
+
+  .list{flex:1;overflow:auto;padding:0 8px 10px}
   .place{
-    display:flex;align-items:center;gap:10px;padding:10px 11px;margin:7px 0;
-    background:var(--char-3);border:1px solid var(--line);cursor:pointer;border-radius:10px;
-    transition:transform .08s,box-shadow .1s,border-color .1s}
-  .place:hover{transform:translateX(3px);box-shadow:0 4px 14px var(--shadow);
-    border-color:var(--amber)}
-  .place .emo{font-size:18px;line-height:1}
+    display:flex;align-items:center;gap:9px;padding:9px 8px;
+    border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s}
+  .place:hover{background:var(--bg-2)}
+  .place .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+    flex:none;box-shadow:0 0 0 2px rgba(0,121,193,.18)}
   .place .meta{flex:1;min-width:0}
-  .place .nm{font-size:13px;font-weight:700;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;color:var(--cream)}
-  .place .lbl{font-size:10.5px;color:var(--muted);white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;margin-top:2px;font-weight:500}
-  .place .lbl i{color:#7c6f5b;font-style:italic}
-  .place .edit,.place .del{border:none;background:none;color:#7c6f5b;font-size:14px;
-    cursor:pointer;padding:2px 4px;font-family:inherit;border-radius:6px;line-height:1}
-  .place .edit:hover{color:var(--amber)}
-  .place .del:hover{color:var(--amber)}
-  .empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12px;
-    line-height:1.6;font-weight:500}
+  .place .nm{font-size:13px;font-weight:600;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  .place .lbl{font-size:11px;color:var(--ink-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .place .lbl i{color:#a4abb2}
+  .place .act{border:none;background:none;color:#a4abb2;font-size:13px;cursor:pointer;
+    padding:4px 5px;font-family:inherit;border-radius:5px;line-height:1}
+  .place .act:hover{color:var(--accent);background:var(--bg-3)}
+  .place .act.del:hover{color:var(--danger)}
+  .empty{padding:30px 16px;text-align:center;color:var(--ink-2);font-size:12.5px;line-height:1.6}
 
-  .foot{padding:14px 24px;border-top:1px solid var(--line);
-    font-size:10px;color:var(--muted);display:flex;justify-content:space-between;font-weight:500}
-  .foot button{font:inherit;font-size:10px;border:none;background:none;
-    color:var(--amber);cursor:pointer;text-decoration:underline;font-weight:600}
+  /* options row (theme color) */
+  .options{padding:12px 14px;border-top:1px solid var(--line);flex:none;
+    display:flex;flex-direction:column;gap:12px}
+  .optrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .optlabel{font-size:12px;font-weight:600;color:var(--ink)}
+  .optright{display:flex;align-items:center;gap:9px}
 
-  .fitbtn{
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    width:100%;margin-top:18px;padding:11px 12px;cursor:pointer;
-    font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
-    color:var(--char);background:var(--amber);border:none;border-radius:8px;
-    transition:background .12s,transform .08s,box-shadow .12s}
-  .fitbtn:hover{background:var(--amber-soft);box-shadow:0 4px 14px rgba(232,163,61,.3)}
-  .fitbtn:active{transform:translateY(1px)}
-  .fitbtn:disabled{background:var(--char-3);color:#6b6051;cursor:not-allowed;box-shadow:none}
+  /* toggle switch */
+  .toggle{position:relative;display:inline-flex;cursor:pointer}
+  .toggle input{position:absolute;opacity:0;width:0;height:0}
+  .toggle .track{width:38px;height:21px;border-radius:11px;background:var(--bg-3);
+    border:1px solid var(--line-strong);transition:.15s;position:relative}
+  .toggle .knob{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .18s}
+  .toggle input:checked + .track{background:var(--accent);border-color:var(--accent)}
+  .toggle input:checked + .track .knob{transform:translateX(17px)}
+
+  /* color picker swatch (theme accent) */
+  .colorbtn{position:relative;width:26px;height:26px;cursor:pointer;display:inline-block}
+  .colorbtn input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;
+    width:100%;height:100%;border:none;padding:0}
+  .colorbtn .swatch{display:block;width:26px;height:26px;border-radius:6px;
+    border:1px solid var(--line-strong);transition:transform .1s}
+  .colorbtn:hover .swatch{transform:scale(1.08)}
+  .resetcolor{border:none;background:none;color:var(--ink-2);font-family:inherit;
+    font-size:10px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;
+    text-decoration:underline;font-weight:700;padding:0}
+  .resetcolor:hover{color:var(--accent)}
+
+  /* status */
+  .datastatus{padding:9px 14px;font-size:10.5px;color:var(--ink-2);font-weight:500;
+    text-align:center;border-top:1px solid var(--line);flex:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* footer publish */
+  .foot{padding:12px 14px calc(12px + env(safe-area-inset-bottom));flex:none;
+    border-top:1px solid var(--line)}
+  .publishbtn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    padding:11px;border:none;border-radius:6px;cursor:pointer;font-family:inherit;
+    font-size:13px;font-weight:700;color:#fff;background:var(--accent);transition:.12s}
+  .publishbtn:hover:not(:disabled){background:var(--accent-dark)}
+  .publishbtn:active{transform:translateY(1px)}
+  .publishbtn:disabled{opacity:.6;cursor:not-allowed}
+  .publishbtn svg{width:15px;height:15px}
 
   /* ---------- Map ---------- */
-  #map{height:100vh;height:100dvh;width:100%;background:#dfe7e4}
-  .leaflet-container{font-family:'Manrope',system-ui,sans-serif;background:#e9efe9}
+  #map{height:100vh;height:100dvh;width:100%;background:var(--map-bg)}
+  .leaflet-container{font-family:'Inter',sans-serif;background:var(--map-bg)}
 
-  .pin{display:grid;place-items:center;width:34px;height:34px;
-    background:#fffdf8;border:2px solid var(--char);border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);box-shadow:2px 3px 5px rgba(0,0,0,.3);font-size:16px}
-  .pin span{transform:rotate(45deg)}
+  /* default teardrop pin (single style, tinted by accent) */
+  .pin{width:26px;height:26px;position:relative}
+  .pin .head{position:absolute;left:50%;top:0;width:22px;height:22px;
+    margin-left:-11px;background:var(--accent);border:2.5px solid #fff;
+    border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+    box-shadow:0 2px 5px rgba(0,0,0,.35)}
+  .pin .core{position:absolute;left:50%;top:7px;width:7px;height:7px;margin-left:-3.5px;
+    background:#fff;border-radius:50%}
 
-  .leaflet-popup-content-wrapper{border-radius:10px;border:1px solid var(--char);
-    box-shadow:0 8px 22px var(--shadow)}
-  .leaflet-popup-content{margin:12px 14px;font-family:'Manrope',sans-serif}
-  .pop b{font-size:15px;font-weight:800;color:var(--ink)}
-  .pop .pl{font-size:11px;color:#7c6c54;margin-top:3px;font-weight:500}
+  .leaflet-popup-content-wrapper{border-radius:7px;border:1px solid var(--line-strong);
+    box-shadow:var(--shadow)}
+  .leaflet-popup-content{margin:11px 13px;font-family:'Inter',sans-serif}
+  .pop b{font-size:14px;font-weight:700;color:var(--ink)}
+  .pop .pl{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+  .leaflet-popup-tip{border:1px solid var(--line-strong)}
+
+  .leaflet-tooltip.pinlabel{background:#fff;color:var(--ink);border:1px solid var(--line-strong);
+    border-radius:5px;padding:3px 8px;font-family:'Inter',sans-serif;font-size:11px;
+    font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,.2);white-space:nowrap}
+  .leaflet-tooltip.pinlabel::before{display:none}
 
   /* toast */
-  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%)
-    translateY(140%);z-index:2000;background:var(--char);color:var(--cream);
-    padding:11px 20px;font-size:12px;font-weight:600;border-radius:8px;
-    border:1px solid var(--amber);box-shadow:0 8px 22px var(--shadow);
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(160%);
+    z-index:2000;background:var(--ink);color:#fff;padding:10px 18px;font-size:12.5px;
+    font-weight:600;border-radius:7px;box-shadow:0 6px 20px rgba(0,0,0,.3);
     transition:transform .3s;max-width:80vw}
   #toast.show{transform:translateX(-50%) translateY(0)}
 
-  .list::-webkit-scrollbar,.results::-webkit-scrollbar{width:8px}
+  /* basemap switcher (floating, ArcGIS-style) */
+  .basemap-switch{position:absolute;top:12px;right:12px;z-index:900;
+    display:flex;background:#fff;border:1px solid var(--line-strong);
+    border-radius:7px;overflow:hidden;box-shadow:var(--shadow)}
+  .bm-opt{display:flex;align-items:center;gap:6px;padding:7px 11px;border:none;
+    background:#fff;color:var(--ink-2);font-family:inherit;font-size:12px;font-weight:600;
+    cursor:pointer;transition:.12s;border-left:1px solid var(--line)}
+  .bm-opt:first-child{border-left:none}
+  .bm-opt svg{width:15px;height:15px}
+  .bm-opt:hover{background:var(--bg-2);color:var(--ink)}
+  .bm-opt.sel{background:var(--accent);color:#fff}
+  @media(max-width:760px){
+    .basemap-switch{top:10px;right:10px}
+    .bm-opt span{display:none}
+    .bm-opt{padding:9px 11px}
+  }
+
+  .list::-webkit-scrollbar,.results::-webkit-scrollbar{width:9px}
   .list::-webkit-scrollbar-thumb,.results::-webkit-scrollbar-thumb{
-    background:var(--line)}
+    background:var(--line-strong);border-radius:5px;border:2px solid var(--bg)}
 
-  /* theme switcher */
-  .themebar{display:flex;align-items:center;gap:10px;margin-top:16px}
-
-  /* show-labels toggle */
-  .toggle{display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;
-    user-select:none}
-  .toggle input{position:absolute;opacity:0;width:0;height:0}
-  .toggle .track{position:relative;width:38px;height:21px;border-radius:11px;
-    background:var(--char-3);border:1px solid var(--line);flex:none;transition:background .15s}
-  .toggle .knob{position:absolute;top:2px;left:2px;width:15px;height:15px;
-    border-radius:50%;background:var(--muted);transition:transform .18s,background .15s}
-  .toggle input:checked + .track{background:var(--amber)}
-  .toggle input:checked + .track .knob{transform:translateX(17px);background:var(--char)}
-  .toggle .tlabel{font-size:12px;font-weight:600;color:var(--cream)}
-  .toggle:hover .track{border-color:var(--muted)}
-
-  /* permanent map labels (Leaflet tooltips) */
-  .leaflet-tooltip.pinlabel{background:#fffdf8;color:var(--ink);border:1px solid var(--char);
-    border-radius:7px;padding:3px 8px;font-family:'Manrope',sans-serif;font-size:11px;
-    font-weight:700;box-shadow:0 3px 8px rgba(0,0,0,.25);white-space:nowrap}
-  .leaflet-tooltip.pinlabel::before{display:none}
-
-  .themelbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--muted);font-weight:700}
-  .swatches{display:flex;gap:7px}
-  .swatches button{width:20px;height:20px;border-radius:50%;cursor:pointer;
-    border:2px solid transparent;padding:0;transition:transform .1s;
-    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
-  .swatches button:hover{transform:scale(1.18)}
-  .swatches button.sel{border-color:var(--cream);transform:scale(1.12)}
-
-  /* text color picker */
-  .colorbtn{position:relative;width:22px;height:22px;cursor:pointer;display:inline-block}
-  .colorbtn input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;
-    width:100%;height:100%;border:none;padding:0}
-  .colorbtn .swatch{display:block;width:22px;height:22px;border-radius:6px;
-    border:2px solid var(--line);background:var(--cream);
-    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2);transition:transform .1s}
-  .colorbtn:hover .swatch{transform:scale(1.12)}
-  .resetcolor{border:none;background:none;color:var(--muted);font-family:inherit;
-    font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
-    text-decoration:underline;font-weight:700;padding:0}
-  .resetcolor:hover{color:var(--amber)}
-
-  /* map context menu */
-  .ctxmenu{position:fixed;z-index:3000;min-width:170px;background:var(--char-3);
-    border:1px solid var(--line);border-radius:9px;padding:5px;display:none;
-    box-shadow:0 12px 30px var(--shadow);font-family:'Manrope',sans-serif}
+  /* context menu */
+  .ctxmenu{position:fixed;z-index:3000;min-width:178px;background:#fff;
+    border:1px solid var(--line-strong);border-radius:7px;padding:5px;display:none;
+    box-shadow:var(--shadow);font-family:'Inter',sans-serif}
   .ctxmenu.show{display:block}
-  .ctxmenu .ci{display:flex;align-items:center;gap:9px;padding:9px 11px;
-    font-size:12.5px;font-weight:600;color:var(--cream);cursor:pointer;
-    border-radius:6px;line-height:1.2}
-  .ctxmenu .ci:hover{background:var(--amber);color:var(--char)}
-  .ctxmenu .ci.danger:hover{background:#c0432e;color:#fff}
-  .ctxmenu .ci svg{flex:none}
-  .ctxmenu .ctxhdr{padding:7px 11px 6px;font-size:9px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--muted);font-weight:700;
+  .ctxmenu .ci{display:flex;align-items:center;gap:9px;padding:9px 10px;
+    font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;border-radius:5px}
+  .ctxmenu .ci:hover{background:var(--bg-2)}
+  .ctxmenu .ci.danger{color:var(--danger)}
+  .ctxmenu .ci.danger:hover{background:#fbeae8}
+  .ctxmenu .ci svg{width:15px;height:15px;flex:none}
+  .ctxmenu .ctxhdr{padding:7px 10px 6px;font-size:9.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-2);font-weight:700;
     border-bottom:1px solid var(--line);margin-bottom:4px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
 
-  /* About modal */
-  .modal{position:fixed;inset:0;z-index:4000;display:none;
-    align-items:center;justify-content:center;padding:24px;
-    background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
-  .modal.show{display:flex;animation:fade .25s ease}
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:4000;display:none;align-items:center;
+    justify-content:center;padding:24px;background:rgba(20,30,40,.45);backdrop-filter:blur(2px)}
+  .modal.show{display:flex;animation:fade .2s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
-  .modal .card{position:relative;width:min(560px,100%);max-height:88vh;overflow:auto;
-    background:linear-gradient(180deg,var(--char-2),var(--char));
-    border:1px solid var(--line);border-radius:16px;padding:34px 34px 28px;
-    box-shadow:0 24px 60px rgba(0,0,0,.5);animation:pop .28s cubic-bezier(.2,.9,.3,1.1)}
-  @keyframes pop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}
-  .modal .close{position:absolute;top:16px;right:16px;width:32px;height:32px;
-    border:1px solid var(--line);background:var(--char-3);color:var(--muted);
-    border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;line-height:1}
-  .modal .close:hover{color:var(--amber);border-color:var(--amber)}
-  .modal .badge{display:inline-block;font-size:10px;letter-spacing:.26em;
-    text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:8px}
-  .modal h2{font-size:27px;font-weight:800;letter-spacing:-.02em;color:var(--cream)}
-  .modal .tag{font-size:13px;line-height:1.6;color:var(--muted);
-    margin-top:10px;font-weight:500}
-  .techgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
-  @media(max-width:520px){.techgrid{grid-template-columns:1fr}}
-  .tech{background:var(--char-3);border:1px solid var(--line);border-radius:11px;
-    padding:13px 14px}
-  .tech .th{font-size:13px;font-weight:700;color:var(--amber-soft)}
-  .tech .td{font-size:11.5px;line-height:1.5;color:var(--muted);margin-top:5px;font-weight:500}
-  .modal .foot-note{font-size:11.5px;color:var(--muted);margin-top:20px;
-    line-height:1.6;font-weight:500}
-  .modal code{background:var(--char-3);border:1px solid var(--line);
-    padding:1px 6px;border-radius:5px;font-size:11px;color:var(--cream)}
-  .modal .steps{margin:18px 0 4px;padding-left:20px;display:flex;
-    flex-direction:column;gap:9px}
-  .modal .steps li{font-size:12.5px;line-height:1.5;color:var(--cream);
-    font-weight:500;padding-left:4px}
-  .modal .steps li b{color:var(--amber-soft);font-weight:700}
+  .modal .card{position:relative;width:min(540px,100%);max-height:88vh;overflow:auto;
+    background:#fff;border:1px solid var(--line-strong);border-radius:10px;
+    padding:28px 28px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3);
+    animation:pop .24s cubic-bezier(.2,.9,.3,1.05)}
+  @keyframes pop{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+  .modal .close{position:absolute;top:15px;right:15px;width:30px;height:30px;
+    border:1px solid var(--line);background:var(--bg-2);color:var(--ink-2);
+    border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit}
+  .modal .close:hover{color:var(--ink);border-color:var(--line-strong)}
+  .modal .badge{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:7px}
+  .modal h2{font-family:'Barlow Semi Condensed',sans-serif;font-size:25px;font-weight:700;
+    letter-spacing:.005em;color:var(--ink)}
+  .modal .tag{font-size:13px;line-height:1.6;color:var(--ink-2);margin-top:9px}
+  .techgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:20px}
+  .tech{background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:12px 13px}
+  .tech .th{font-size:12.5px;font-weight:700;color:var(--accent)}
+  .tech .td{font-size:11px;line-height:1.5;color:var(--ink-2);margin-top:4px}
+  .modal .foot-note{font-size:11.5px;color:var(--ink-2);margin-top:18px;line-height:1.6}
+  .modal code{background:var(--bg-3);border:1px solid var(--line);padding:1px 6px;
+    border-radius:4px;font-size:11px;color:var(--ink)}
+  .modal .steps{margin:16px 0 4px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+  .modal .steps li{font-size:12.5px;line-height:1.5;color:var(--ink)}
+  .modal .steps li b{color:var(--accent)}
 
-  /* settings modal */
-  .setrow{margin-top:14px}
-  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .slabel{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--muted);font-weight:700;margin-bottom:6px}
-  .setrow input{width:100%;padding:10px 12px;font-family:inherit;font-size:13px;
-    border:1px solid var(--line);background:var(--char-3);color:var(--cream);
-    outline:none;border-radius:8px;font-weight:500}
-  .setrow input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(232,163,61,.18)}
-  .setbtns{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
-  .sbtn{font-family:inherit;font-size:12px;font-weight:700;padding:10px 16px;
-    border-radius:8px;cursor:pointer;border:1px solid var(--line);transition:transform .08s}
+  /* settings form */
+  .setrow{margin-top:13px}
+  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .slabel{display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--ink-2);font-weight:700;margin-bottom:6px}
+  .setrow input{width:100%;padding:9px 11px;font-family:inherit;font-size:13px;
+    border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+    outline:none;border-radius:6px}
+  .setrow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,121,193,.15)}
+  .setbtns{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+  .sbtn{font-family:inherit;font-size:12.5px;font-weight:700;padding:9px 15px;border-radius:6px;
+    cursor:pointer;border:1px solid var(--line-strong);transition:.1s}
   .sbtn:active{transform:translateY(1px)}
-  .sbtn.solid{background:var(--amber);color:var(--char);border-color:var(--amber)}
-  .sbtn.ghost{background:var(--char-3);color:var(--cream)}
-  .sbtn.danger{background:transparent;color:#c0432e;border-color:#c0432e}
-  .sbtn:disabled{opacity:.5;cursor:not-allowed}
-  .setmsg{font-size:12px;font-weight:600;margin-top:14px;line-height:1.5;min-height:1px}
-  .setmsg.ok{color:#3fa45f}
-  .setmsg.err{color:#d9694f}
-  .setmsg.busy{color:var(--muted)}
-  .security{margin-top:22px;padding:15px 16px;background:var(--char-3);
-    border:1px solid var(--line);border-radius:11px}
-  .security .sectitle{font-size:12px;font-weight:800;color:var(--amber-soft);margin-bottom:8px}
-  .security p{font-size:11.5px;line-height:1.55;color:var(--muted);font-weight:500;margin-top:8px}
+  .sbtn.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .sbtn.solid:hover{background:var(--accent-dark)}
+  .sbtn.ghost{background:#fff;color:var(--ink)}
+  .sbtn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .sbtn.danger{background:#fff;color:var(--danger);border-color:#e4b4ae}
+  .setmsg{font-size:12px;font-weight:600;margin-top:13px;line-height:1.5;min-height:1px}
+  .setmsg.ok{color:var(--ok)}
+  .setmsg.err{color:var(--danger)}
+  .setmsg.busy{color:var(--ink-2)}
+  .security{margin-top:20px;padding:14px 15px;background:var(--bg-2);border:1px solid var(--line);
+    border-radius:9px}
+  .security .sectitle{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:7px}
+  .security p{font-size:11.5px;line-height:1.55;color:var(--ink-2);margin-top:7px}
   .security p:first-of-type{margin-top:0}
-  .security a{color:var(--amber);font-weight:700;text-decoration:none}
+  .security a{color:var(--accent);font-weight:700;text-decoration:none}
   .security a:hover{text-decoration:underline}
 
-  .datastatus{padding:10px 24px 0;font-size:10px;letter-spacing:.04em;
-    color:var(--muted);font-weight:600;text-align:center}
-
-  /* ============================================================
-     MOBILE — map fills screen; panel becomes a bottom sheet
-     ============================================================ */
+  /* ===================== MOBILE ===================== */
   @media(max-width:760px){
     .app{display:block;height:100dvh;position:relative}
-
-    /* map sits behind everything, full screen */
     #map{position:absolute;inset:0;height:100dvh;z-index:1}
-
-    /* floating button to open the panel */
     .fab{display:flex;position:fixed;z-index:1400;right:14px;
       bottom:calc(16px + env(safe-area-inset-bottom));
-      width:56px;height:56px;border-radius:18px;border:none;cursor:pointer;
-      align-items:center;justify-content:center;
-      background:var(--amber);color:var(--char);
-      box-shadow:0 6px 20px rgba(0,0,0,.35);transition:transform .12s}
+      width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;
+      align-items:center;justify-content:center;background:var(--accent);color:#fff;
+      box-shadow:0 6px 20px rgba(0,0,0,.3);transition:transform .12s}
     .fab:active{transform:scale(.94)}
     .fab svg{width:24px;height:24px}
-
-    /* the panel becomes a draggable bottom sheet */
-    .panel{
-      position:fixed;left:0;right:0;bottom:0;z-index:1500;
-      height:86dvh;max-height:86dvh;
-      border-right:none;border-top:1px solid var(--line);
-      border-radius:20px 20px 0 0;
-      box-shadow:0 -10px 40px rgba(0,0,0,.4);
-      transform:translateY(100%);
-      transition:transform .32s cubic-bezier(.32,.72,0,1);
-      padding-bottom:env(safe-area-inset-bottom);
-    }
+    .panel{position:fixed;left:0;right:0;bottom:0;z-index:1500;height:88dvh;max-height:88dvh;
+      border-right:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+      box-shadow:0 -8px 36px rgba(0,0,0,.3);transform:translateY(100%);
+      transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom)}
     .panel.open{transform:translateY(0)}
-
-    /* grab handle bar at the top of the sheet */
-    .sheet-handle{display:flex;flex-direction:column;align-items:center;
-      padding:11px 0 5px;cursor:grab;touch-action:none;flex:none}
-    .sheet-handle .bar{width:42px;height:5px;border-radius:3px;
-      background:var(--line)}
-    .sheet-handle .peeklabel{display:none}
-
-    /* tighten the brand so the sheet isn't dominated by the header */
-    .brand{padding:6px 20px 14px;border-bottom:1px solid var(--line)}
-    .brand .kicker{font-size:10px}
-    .brand h1{font-size:21px;display:inline}
-    .brand h1 br{display:none}
-    .brand .sub{font-size:11.5px;margin-top:8px}
-
-    .controls{padding:14px 20px 6px}
-    /* prevent mobile browsers from zooming when focusing inputs */
+    .sheet-handle{display:flex;justify-content:center;padding:9px 0 3px;cursor:grab;
+      touch-action:none;flex:none}
+    .sheet-handle .bar{width:42px;height:5px;border-radius:3px;background:var(--line-strong)}
+    .topbar{border-radius:0}
     #search,#label{font-size:16px}
-
-    .listhead{padding:14px 20px 4px}
-    .list{padding:4px 14px 14px;-webkit-overflow-scrolling:touch}
-    .place{padding:12px 12px}          /* bigger touch targets */
-    .place .edit,.place .del{font-size:17px;padding:6px 7px}
-
-    .iconpick button{width:42px;height:42px;font-size:20px}
-    .swatches button{width:24px;height:24px}
-    .colorbtn,.colorbtn .swatch{width:26px;height:26px}
-
-    .fitbtn{padding:13px 12px}
-    .toggle{margin-top:16px}
-    .toggle .track{width:44px;height:25px}
-    .toggle .knob{width:19px;height:19px}
-    .toggle input:checked + .track .knob{transform:translateX(19px)}
-
-    .foot{padding:14px 20px calc(14px + env(safe-area-inset-bottom))}
-    .foot button{font-size:12px}
-
-    /* darkening scrim behind the open sheet */
-    .scrim{display:none;position:fixed;inset:0;z-index:1450;
-      background:rgba(0,0,0,.4);opacity:0;transition:opacity .3s}
+    .place{padding:12px 8px}
+    .place .act{font-size:16px;padding:7px 8px}
+    .scrim{display:none;position:fixed;inset:0;z-index:1450;background:rgba(0,0,0,.4);
+      opacity:0;transition:opacity .3s}
     .scrim.show{display:block;opacity:1}
-
-    /* modals: near full-width on phones */
     .modal{padding:0;align-items:flex-end}
-    .modal .card{width:100%;max-height:90dvh;border-radius:18px 18px 0 0;
-      padding:26px 22px calc(22px + env(safe-area-inset-bottom))}
+    .modal .card{width:100%;max-height:90dvh;border-radius:14px 14px 0 0;
+      padding:24px 20px calc(20px + env(safe-area-inset-bottom))}
     .techgrid{grid-template-columns:1fr}
-
-    /* map controls clear of the FAB / sheet */
     .leaflet-bottom.leaflet-right{margin-bottom:78px}
   }
-
-  /* very narrow phones (S22 Ultra portrait ~360-412px) */
-  @media(max-width:412px){
-    .brand h1{font-size:19px}
-    .iconpick{gap:6px}
-    .iconpick button{width:40px;height:40px}
-  }
-
-  @media(prefers-reduced-motion:reduce){
-    .panel,.scrim,.fab{transition:none}
-  }
+  @media(prefers-reduced-motion:reduce){.panel,.scrim,.fab{transition:none}}
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="panel" id="panel">
-    <div class="sheet-handle" id="sheetHandle">
-      <span class="bar"></span>
-      <span class="peeklabel" id="peekLabel">Tap to open controls</span>
-    </div>
-    <div class="brand">
-      <div class="kicker">A Field Notebook</div>
-      <h1>Places<br>I've Been</h1>
-      <div class="sub">Search any city worldwide, or right-click (long-press on mobile) the map to drop a pin. Right-click or use the ✎ to edit a pin.</div>
-      <div class="themebar">
-        <span class="themelbl">Theme</span>
-        <div class="swatches" id="swatches"></div>
-      </div>
-      <div class="themebar">
-        <span class="themelbl">Custom</span>
-        <label class="colorbtn" title="Background color">
-          <input type="color" id="bgColor">
-          <span class="swatch" id="bgColorSwatch"></span>
-        </label>
-        <label class="colorbtn" title="Accent color">
-          <input type="color" id="accentColor">
-          <span class="swatch" id="accentColorSwatch"></span>
-        </label>
-        <button class="resetcolor" id="themeReset" title="Back to preset themes">reset</button>
-      </div>
-      <div class="themebar">
-        <span class="themelbl">Text</span>
-        <label class="colorbtn" id="textColorBtn" title="Pick panel text color">
-          <input type="color" id="textColor">
-          <span class="swatch" id="textColorSwatch"></span>
-        </label>
-        <button class="resetcolor" id="textColorReset" title="Reset to theme default">reset</button>
-      </div>
-    </div>
+    <div class="sheet-handle" id="sheetHandle"><span class="bar"></span></div>
 
-    <div class="controls">
-      <label class="fld" for="search">Search a city</label>
-      <div class="searchwrap">
-        <input id="search" type="text" placeholder="e.g. Kyoto, Japan" autocomplete="off">
-        <div class="results" id="results"></div>
-      </div>
-
-      <label class="fld">Label (optional)</label>
-      <input id="label" type="text" placeholder="“Best diner of the trip”" style="width:100%;padding:11px 12px;font-family:inherit;font-size:13px;border:1px solid var(--line);background:var(--char-3);color:var(--cream);outline:none;border-radius:8px;font-weight:500">
-
-      <label class="fld">Pick a marker</label>
-      <div class="iconpick" id="iconpick"></div>
-
-      <button id="fitBtn" class="fitbtn" title="Fit all pins in view">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
-        Zoom to Extent
+    <div class="topbar">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      </span>
+      <span class="ttl">Places I've Been</span>
+      <button class="iconbtn" id="aboutBtn" title="About">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
       </button>
+      <button class="iconbtn" id="settingsBtn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
 
-      <label class="toggle" id="labelToggle">
-        <input type="checkbox" id="labelChk">
-        <span class="track"><span class="knob"></span></span>
-        <span class="tlabel">Show all labels on map</span>
-      </label>
+    <div class="searchwrap">
+      <div class="searchbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" type="text" placeholder="Search a city worldwide…" autocomplete="off">
+      </div>
+      <div class="results" id="results"></div>
+    </div>
+
+    <div class="addrow">
+      <label class="fld" for="label">Label for next pin (optional)</label>
+      <input id="label" type="text" placeholder="e.g. Best diner of the trip">
+      <div class="hinttext">Search a city, or right-click (long-press on mobile) the map to drop a pin.</div>
     </div>
 
     <div class="listhead">
-      <h2>The Collection</h2>
-      <span class="count" id="count">0 pins</span>
+      <h2>Locations</h2>
+      <div class="right">
+        <span class="count" id="count">0</span>
+        <button class="minibtn" id="fitBtn" title="Zoom to all pins">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
+          Extent
+        </button>
+      </div>
     </div>
     <div class="list" id="list"></div>
 
+    <div class="options">
+      <div class="optrow">
+        <span class="optlabel">Show labels on map</span>
+        <label class="toggle"><input type="checkbox" id="labelChk">
+          <span class="track"><span class="knob"></span></span></label>
+      </div>
+      <div class="optrow">
+        <span class="optlabel">Theme color</span>
+        <div class="optright">
+          <label class="colorbtn" title="Pick theme color">
+            <input type="color" id="themeColor">
+            <span class="swatch" id="themeColorSwatch"></span>
+          </label>
+          <button class="resetcolor" id="themeColorReset" title="Reset to default blue">reset</button>
+        </div>
+      </div>
+    </div>
+
     <div class="datastatus" id="dataStatus">Loading…</div>
+
     <div class="foot">
-      <button id="aboutBtn">About</button>
-      <button id="settingsBtn">Settings</button>
-      <button id="exportBtn">Publish ↑</button>
+      <button class="publishbtn" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Publish
+      </button>
     </div>
   </aside>
 
   <div id="map"></div>
+  <div class="basemap-switch" id="basemapSwitch">
+    <button class="bm-opt" data-bm="light" title="Light canvas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      <span>Map</span>
+    </button>
+    <button class="bm-opt" data-bm="satellite" title="Satellite imagery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+      <span>Satellite</span>
+    </button>
+  </div>
   <div class="scrim" id="scrim"></div>
-  <button class="fab" id="fab" title="Open controls" aria-label="Open controls">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+  <button class="fab" id="fab" title="Open panel" aria-label="Open panel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
 </div>
 <div id="toast"></div>
@@ -493,38 +441,18 @@
 <div class="modal" id="aboutModal">
   <div class="card">
     <button class="close" id="aboutClose" title="Close">✕</button>
-    <div class="badge">Field Notebook</div>
+    <div class="badge">About</div>
     <h2>Places I've Been</h2>
-    <p class="tag">An interactive world map for pinning everywhere you've wandered — search a city or right-click to drop a marker, label it, theme it, and watch your travels spread across the globe.</p>
-
+    <p class="tag">An interactive world map for pinning everywhere you've wandered. Search a city or right-click the map to drop a pin, label it, and publish it to share across devices.</p>
     <div class="techgrid">
-      <div class="tech">
-        <div class="th">Leaflet.js</div>
-        <div class="td">The leading open-source web-mapping engine — handles the interactive map, markers, and smooth pan/zoom. No API key required.</div>
-      </div>
-      <div class="tech">
-        <div class="th">CARTO Voyager tiles</div>
-        <div class="td">Clean, modern raster basemap tiles served over OpenStreetMap data.</div>
-      </div>
-      <div class="tech">
-        <div class="th">OpenStreetMap · Nominatim</div>
-        <div class="td">Free worldwide geocoding & reverse-geocoding — turns city searches and map clicks into coordinates and place names.</div>
-      </div>
-      <div class="tech">
-        <div class="th">Vanilla JS · HTML · CSS</div>
-        <div class="td">No frameworks, no build step. CSS custom properties power the six switchable themes.</div>
-      </div>
-      <div class="tech">
-        <div class="th">Shared places.json + localStorage</div>
-        <div class="td">Pins load from a shared places.json in the repo so every device sees the same map. Local edits are cached in your browser until you publish.</div>
-      </div>
-      <div class="tech">
-        <div class="th">GitHub Contents API</div>
-        <div class="td">With a token saved in Settings, Publish commits places.json straight to the repo. Otherwise it downloads the file for manual upload. The token stays in your browser only.</div>
-      </div>
+      <div class="tech"><div class="th">Leaflet.js</div><div class="td">Open-source web-mapping engine handling the map, markers, and pan/zoom. No API key needed.</div></div>
+      <div class="tech"><div class="th">Esri-style light canvas</div><div class="td">CARTO Positron raster tiles over OpenStreetMap data — a clean neutral basemap.</div></div>
+      <div class="tech"><div class="th">OpenStreetMap · Nominatim</div><div class="td">Free worldwide geocoding & reverse-geocoding for city search and map clicks.</div></div>
+      <div class="tech"><div class="th">Shared places.json</div><div class="td">Pins load from a file in the repo so every device sees the same map; localStorage caches local edits.</div></div>
+      <div class="tech"><div class="th">GitHub Contents API</div><div class="td">With a token in Settings, Publish commits directly to the repo; otherwise it downloads the file.</div></div>
+      <div class="tech"><div class="th">Vanilla JS · HTML · CSS</div><div class="td">A single self-contained index.html. No frameworks, no build step.</div></div>
     </div>
-
-    <p class="foot-note">A single self-contained <code>index.html</code> — drop it on GitHub Pages and it just works.</p>
+    <p class="foot-note">A single <code>index.html</code> — drop it on GitHub Pages and it just works.</p>
   </div>
 </div>
 
@@ -532,15 +460,15 @@
   <div class="card">
     <button class="close" id="publishClose" title="Close">✕</button>
     <div class="badge">Publish your map</div>
-    <h2>One file downloaded</h2>
-    <p class="tag">A file called <code>places.json</code> just downloaded. To make these pins show up for everyone on every device, commit that file to your repo:</p>
+    <h2>File downloaded</h2>
+    <p class="tag">A file called <code>places.json</code> just downloaded. To share these pins across devices, commit it to your repo:</p>
     <ol class="steps">
-      <li>Open your repo on GitHub (the same one with <code>index.html</code>).</li>
+      <li>Open your repo on GitHub (the one with <code>index.html</code>).</li>
       <li>Click <b>Add file → Upload files</b>.</li>
-      <li>Drag in the downloaded <code>places.json</code>. If it asks to replace the existing one, allow it.</li>
+      <li>Drag in <code>places.json</code> and allow it to replace the old one.</li>
       <li>Click <b>Commit changes</b>.</li>
     </ol>
-    <p class="foot-note">GitHub Pages redeploys in a minute or two. After that, reloading the live site on any device shows the same pins. Until you publish, your pins live only in this browser.</p>
+    <p class="foot-note">Tip: add a GitHub token in <b>Settings</b> and Publish will commit automatically — no manual upload.</p>
   </div>
 </div>
 
@@ -549,122 +477,116 @@
     <button class="close" id="settingsClose" title="Close">✕</button>
     <div class="badge">Auto-publish setup</div>
     <h2>Publish directly to GitHub</h2>
-    <p class="tag">Add a GitHub token and the <b>Publish</b> button will commit <code>places.json</code> to your repo automatically — no manual upload. Leave this empty to keep using the download method.</p>
-
+    <p class="tag">Add a GitHub token and <b>Publish</b> will commit <code>places.json</code> automatically. Leave empty to keep using the download method.</p>
     <div class="setrow">
       <label class="slabel" for="ghToken">Fine-grained personal access token</label>
       <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
     </div>
     <div class="setgrid">
-      <div class="setrow">
-        <label class="slabel" for="ghOwner">Owner (username)</label>
-        <input id="ghOwner" type="text" placeholder="eforoutan" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="setrow">
-        <label class="slabel" for="ghRepo">Repository</label>
-        <input id="ghRepo" type="text" placeholder="travel-map" autocomplete="off" spellcheck="false">
-      </div>
+      <div class="setrow"><label class="slabel" for="ghOwner">Owner (username)</label>
+        <input id="ghOwner" type="text" placeholder="eforoutan" autocomplete="off" spellcheck="false"></div>
+      <div class="setrow"><label class="slabel" for="ghRepo">Repository</label>
+        <input id="ghRepo" type="text" placeholder="travel-map" autocomplete="off" spellcheck="false"></div>
     </div>
-    <div class="setrow">
-      <label class="slabel" for="ghBranch">Branch</label>
-      <input id="ghBranch" type="text" placeholder="main" autocomplete="off" spellcheck="false">
-    </div>
-
+    <div class="setrow"><label class="slabel" for="ghBranch">Branch</label>
+      <input id="ghBranch" type="text" placeholder="main" autocomplete="off" spellcheck="false"></div>
     <div class="setbtns">
       <button id="ghTest" class="sbtn ghost">Test connection</button>
       <button id="ghSave" class="sbtn solid">Save</button>
       <button id="ghClear" class="sbtn danger">Clear token</button>
     </div>
     <div class="setmsg" id="ghMsg"></div>
-
     <div class="security">
-      <div class="sectitle">⚠︎ Where your token lives</div>
-      <p>Your token is stored only in <b>this browser on this device</b> (localStorage) — it is never written into the repo or the public page, so visitors can't see or use it. Still, treat it like a password.</p>
-      <p>Use a <b>fine-grained</b> token scoped to <b>only this one repository</b>, with <b>Contents: Read and write</b> permission and nothing else. That way, if it ever leaks, the damage is limited to this single repo. Set an expiry and regenerate periodically.</p>
+      <div class="sectitle">Where your token lives</div>
+      <p>Stored only in <b>this browser on this device</b> — never written into the repo or the public page, so visitors can't see it. Treat it like a password.</p>
+      <p>Use a <b>fine-grained</b> token scoped to <b>only this one repository</b>, with <b>Contents: Read and write</b> permission. If your test passes but Publish fails with 403, the Contents permission is read-only — set it to Read and write.</p>
       <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token →</a></p>
     </div>
   </div>
 </div>
 
 <script>
-const ICONS = ["📍","🏔️","🏖️","🌆","🍔","🎸","🏛️","🌲","☕","🎡","⛺","🛣️"];
-let selectedIcon = ICONS[0];
+const DEFAULT_ICON="📍";   // single fixed marker; existing pins keep their stored icon field
 let places = load();
 const markers = {};
 let showLabels = loadShowLabels();
 
 /* ---------- Map ---------- */
-const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true}).setView([30,0],3);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; OpenStreetMap &copy; CARTO',
-  subdomains:'abcd',maxZoom:19
-}).addTo(map);
+const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true,zoomControl:true}).setView([30,0],3);
 
-function makeIcon(emoji){
-  return L.divIcon({className:'',html:`<div class="pin"><span>${emoji}</span></div>`,
-    iconSize:[34,34],iconAnchor:[6,30],popupAnchor:[10,-28]});
+const BASEMAPS={
+  light:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}),
+  satellite:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics',maxZoom:19}),
+  // labels overlay drawn on top of satellite so place names stay readable
+  satLabels:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'',maxZoom:19,pane:'shadowPane'})
+};
+let basemap=loadBasemap();
+function applyBasemap(which){
+  basemap=which;
+  map.removeLayer(BASEMAPS.light);
+  map.removeLayer(BASEMAPS.satellite);
+  map.removeLayer(BASEMAPS.satLabels);
+  if(which==='satellite'){
+    BASEMAPS.satellite.addTo(map);
+    BASEMAPS.satLabels.addTo(map);
+  }else{
+    BASEMAPS.light.addTo(map);
+  }
+  document.body.classList.toggle('sat',which==='satellite');
+  document.querySelectorAll('.bm-opt').forEach(b=>b.classList.toggle('sel',b.dataset.bm===which));
+  saveBasemap(which);
+}
+function saveBasemap(w){try{localStorage.setItem('pib_basemap_v1',w);}catch(e){}}
+function loadBasemap(){try{return localStorage.getItem('pib_basemap_v1')||'light';}catch(e){return 'light';}}
+
+function makeIcon(){
+  return L.divIcon({className:'',html:`<div class="pin"><span class="head"></span><span class="core"></span></div>`,
+    iconSize:[26,26],iconAnchor:[13,24],popupAnchor:[0,-22],tooltipAnchor:[0,-20]});
 }
 
 /* ---------- Render ---------- */
-function renderIconPicker(){
-  const box = document.getElementById('iconpick');
-  box.innerHTML='';
-  ICONS.forEach(ic=>{
-    const b=document.createElement('button');
-    b.textContent=ic;
-    if(ic===selectedIcon) b.classList.add('sel');
-    b.onclick=()=>{selectedIcon=ic;renderIconPicker();};
-    box.appendChild(b);
-  });
-}
-
 function tipText(p){return esc(p.label && p.label.trim() ? p.label : p.name);}
 
 function renderMarker(p){
-  const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.icon)}).addTo(map);
+  const m=L.marker([p.lat,p.lng],{icon:makeIcon()}).addTo(map);
   m.bindPopup(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
-  m.bindTooltip(tipText(p),{permanent:showLabels,direction:'top',
-    offset:[10,-26],className:'pinlabel',opacity:1});
+  m.bindTooltip(tipText(p),{permanent:showLabels,direction:'top',className:'pinlabel',opacity:1});
   if(!showLabels)m.closeTooltip();
   m.placeId=p.id;
-  m.on('contextmenu',e=>{
-    L.DomEvent.stopPropagation(e);
-    openCtxMenu(e.originalEvent,{type:'marker',place:p});
-  });
+  m.on('contextmenu',e=>{L.DomEvent.stopPropagation(e);openCtxMenu(e.originalEvent,{type:'marker',place:p});});
   markers[p.id]=m;
 }
 
-/* turn all permanent labels on/off */
 function applyShowLabels(){
   Object.values(markers).forEach(m=>{
-    const t=m.getTooltip();
-    if(!t)return;
-    t.options.permanent=showLabels;
+    const t=m.getTooltip();if(!t)return;
     m.unbindTooltip();
-    m.bindTooltip(t.getContent(),{permanent:showLabels,direction:'top',
-      offset:[10,-26],className:'pinlabel',opacity:1});
+    m.bindTooltip(t.getContent(),{permanent:showLabels,direction:'top',className:'pinlabel',opacity:1});
     if(showLabels)m.openTooltip();else m.closeTooltip();
   });
 }
 
 function renderList(){
   const list=document.getElementById('list');
-  document.getElementById('count').textContent=places.length+(places.length===1?' pin':' pins');
-  document.getElementById('fitBtn').disabled = places.length===0;
+  document.getElementById('count').textContent=places.length;
+  document.getElementById('fitBtn').disabled=places.length===0;
   if(!places.length){
-    list.innerHTML='<div class="empty">No pins yet.<br>Search a city above to begin your map.</div>';
+    list.innerHTML='<div class="empty">No pins yet.<br>Search a city or right-click the map to begin.</div>';
     return;
   }
   list.innerHTML='';
   places.forEach(p=>{
     const el=document.createElement('div');el.className='place';
-    el.innerHTML=`<span class="emo">${p.icon}</span>
+    el.innerHTML=`<span class="dot"></span>
       <div class="meta"><div class="nm">${esc(p.name)}</div>
       <div class="lbl">${p.label?esc(p.label):'<i>no label — click ✎</i>'}</div></div>
-      <button class="edit" title="Edit name & label">✎</button>
-      <button class="del" title="Delete">✕</button>`;
+      <button class="act edit" title="Edit name & label">✎</button>
+      <button class="act del" title="Delete">✕</button>`;
     el.querySelector('.meta').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
-    el.querySelector('.emo').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
+    el.querySelector('.dot').onclick=()=>{map.flyTo([p.lat,p.lng],8);markers[p.id].openPopup();};
     el.querySelector('.edit').onclick=(e)=>{e.stopPropagation();editPin(p.id);};
     el.querySelector('.del').onclick=(e)=>{e.stopPropagation();removePlace(p.id);};
     list.appendChild(el);
@@ -672,8 +594,8 @@ function renderList(){
 }
 
 /* ---------- Data ops ---------- */
-function addPlace(name,lat,lng,label,icon,quiet){
-  const p={id:Date.now()+''+Math.floor(Math.random()*999),name,lat,lng,label:label||'',icon};
+function addPlace(name,lat,lng,label,quiet){
+  const p={id:Date.now()+''+Math.floor(Math.random()*999),name,lat,lng,label:label||'',icon:DEFAULT_ICON};
   places.push(p);save();renderMarker(p);renderList();
   if(quiet){markers[p.id].openPopup();}
   else{map.flyTo([lat,lng],7);markers[p.id].openPopup();}
@@ -690,263 +612,95 @@ function removePlace(id){
 /* ---------- Zoom to Extent ---------- */
 function fitToExtent(){
   if(!places.length){toast('No pins to fit yet');return;}
-  if(places.length===1){
-    map.flyTo([places[0].lat,places[0].lng],8);
-    return;
-  }
+  if(places.length===1){map.flyTo([places[0].lat,places[0].lng],8);return;}
   const bounds=L.latLngBounds(places.map(p=>[p.lat,p.lng]));
   map.flyToBounds(bounds,{padding:[60,60],maxZoom:9,duration:.8});
 }
 document.getElementById('fitBtn').onclick=fitToExtent;
 
-/* ---------- Theme switcher ---------- */
-const THEMES=[
-  {id:'amber', c:'#e8a33d'},
-  {id:'slate', c:'#39c2c9'},
-  {id:'forest',c:'#e0b15a'},
-  {id:'plum',  c:'#d678c6'},
-  {id:'paper', c:'#c0612e'},
-  {id:'mono',  c:'#e8e8e8'},
-];
-function applyTheme(id){
-  document.documentElement.setAttribute('data-theme',id);
-  try{localStorage.setItem('usa_theme_v1',id);}catch(e){}
-  renderSwatches(id);
-  applyTextColor();   // keep any custom text color after theme change
+/* ---------- Theme color picker (accent only) ---------- */
+const DEFAULT_ACCENT='#0079c1';
+function darken(hex,f){
+  hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);const r=Math.round(((n>>16)&255)*(1-f)),
+    g=Math.round(((n>>8)&255)*(1-f)),b=Math.round((n&255)*(1-f));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
-function renderSwatches(active){
-  const box=document.getElementById('swatches');box.innerHTML='';
-  THEMES.forEach(t=>{
-    const b=document.createElement('button');
-    b.style.background=t.c;b.title=t.id;
-    if(t.id===active)b.classList.add('sel');
-    b.onclick=()=>{ customTheme=null;saveCustomTheme();
-      ['--char','--char-2','--char-3','--line','--amber','--amber-soft','--cream','--muted','--ink','--shadow']
-        .forEach(v=>document.documentElement.style.removeProperty(v));
-      applyTheme(t.id); };
-    box.appendChild(b);
-  });
-}
-
-/* ---------- Custom panel text color ---------- */
-let textColor=loadTextColor();   // null = use theme default
-function themeCream(){
-  // the theme's default --cream, read from a fresh computed style
-  return getComputedStyle(document.documentElement).getPropertyValue('--cream').trim();
-}
-function hexToRgb(h){
-  h=h.replace('#','');
-  if(h.length===3)h=h.split('').map(c=>c+c).join('');
-  const n=parseInt(h,16);
-  return [(n>>16)&255,(n>>8)&255,n&255];
-}
-function applyTextColor(){
+let themeColor=loadThemeColor();
+function applyThemeColor(){
   const root=document.documentElement;
-  if(textColor){
-    root.style.setProperty('--cream',textColor);
-    const [r,g,b]=hexToRgb(textColor);
-    root.style.setProperty('--muted',`rgba(${r},${g},${b},.62)`);
-  }else{
-    root.style.removeProperty('--cream');
-    root.style.removeProperty('--muted');
-  }
-  // sync the picker UI
-  const eff=textColor||normHex(themeCream());
-  document.getElementById('textColor').value=eff;
-  document.getElementById('textColorSwatch').style.background=textColor||'var(--cream)';
+  const c=themeColor||DEFAULT_ACCENT;
+  root.style.setProperty('--accent',c);
+  root.style.setProperty('--accent-dark',darken(c,0.22));
+  document.getElementById('themeColor').value=c;
+  document.getElementById('themeColorSwatch').style.background=c;
 }
-function normHex(c){
-  // turn computed color (could be hex or rgb()) into #rrggbb for <input type=color>
-  c=c.trim();
-  if(c.startsWith('#')){
-    if(c.length===4)return '#'+c.slice(1).split('').map(x=>x+x).join('');
-    return c;
-  }
-  const m=c.match(/\d+/g);
-  if(!m)return '#000000';
-  return '#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');
-}
-function saveTextColor(){try{
-  if(textColor)localStorage.setItem('usa_textcolor_v1',textColor);
-  else localStorage.removeItem('usa_textcolor_v1');
-}catch(e){}}
-function loadTextColor(){try{return localStorage.getItem('usa_textcolor_v1')||null;}catch(e){return null;}}
+function saveThemeColor(){try{themeColor?localStorage.setItem('pib_theme_v2',themeColor):localStorage.removeItem('pib_theme_v2');}catch(e){}}
+function loadThemeColor(){try{return localStorage.getItem('pib_theme_v2')||null;}catch(e){return null;}}
+document.getElementById('themeColor').addEventListener('input',e=>{themeColor=e.target.value;saveThemeColor();applyThemeColor();});
+document.getElementById('themeColorReset').onclick=()=>{themeColor=null;saveThemeColor();applyThemeColor();toast('Theme color reset');};
+applyThemeColor();
 
-document.getElementById('textColor').addEventListener('input',e=>{
-  textColor=e.target.value;saveTextColor();applyTextColor();
-});
-document.getElementById('textColorReset').onclick=()=>{
-  textColor=null;saveTextColor();applyTextColor();toast('Text color reset');
-};
-
-/* ---------- Custom full theme (background + accent) ---------- */
-let customTheme=loadCustomTheme();  // {bg, accent} or null
-
-function clamp(n){return Math.max(0,Math.min(255,Math.round(n)));}
-function rgbToHex(r,g,b){return '#'+[r,g,b].map(x=>clamp(x).toString(16).padStart(2,'0')).join('');}
-function luminance([r,g,b]){return (0.299*r+0.587*g+0.114*b)/255;}
-function mix(c1,c2,t){ // t=0 -> c1, t=1 -> c2
-  return [c1[0]+(c2[0]-c1[0])*t,c1[1]+(c2[1]-c1[1])*t,c1[2]+(c2[2]-c1[2])*t];
-}
-function lighten(rgb,amt){return mix(rgb,[255,255,255],amt);}
-function darken(rgb,amt){return mix(rgb,[0,0,0],amt);}
-
-function deriveTheme(bgHex,accentHex){
-  const bg=hexToRgb(bgHex), accent=hexToRgb(accentHex);
-  const dark=luminance(bg)<0.5;               // is the background dark?
-  // surfaces: nudge toward light on dark themes, toward dark on light themes
-  const s2=dark?lighten(bg,0.06):darken(bg,0.04);
-  const s3=dark?lighten(bg,0.12):darken(bg,0.09);
-  const line=dark?lighten(bg,0.18):darken(bg,0.16);
-  // text: light text on dark bg, dark text on light bg
-  const text=dark?[239,231,218]:[40,33,26];
-  const muted=dark?lighten(bg,0.45):darken(bg,0.42);
-  const accentSoft=dark?lighten(accent,0.22):lighten(accent,0.16);
-  return {
-    '--char':bgHex,
-    '--char-2':rgbToHex(...s2),
-    '--char-3':rgbToHex(...s3),
-    '--line':rgbToHex(...line),
-    '--amber':accentHex,
-    '--amber-soft':rgbToHex(...accentSoft),
-    '--cream':rgbToHex(...text),
-    '--muted':rgbToHex(...muted),
-    '--ink':bgHex,
-    '--shadow':dark?'rgba(0,0,0,.4)':'rgba(90,75,55,.22)',
-  };
-}
-function applyCustomTheme(){
-  const root=document.documentElement;
-  const VARS=['--char','--char-2','--char-3','--line','--amber','--amber-soft','--cream','--muted','--ink','--shadow'];
-  if(customTheme){
-    const d=deriveTheme(customTheme.bg,customTheme.accent);
-    VARS.forEach(v=>root.style.setProperty(v,d[v]));
-    renderSwatches(null);            // no preset is "selected"
-  }else{
-    VARS.forEach(v=>root.style.removeProperty(v));
-  }
-  // reflect in the pickers
-  const bgEff=customTheme?customTheme.bg:normHex(getCSS('--char'));
-  const acEff=customTheme?customTheme.accent:normHex(getCSS('--amber'));
-  document.getElementById('bgColor').value=bgEff;
-  document.getElementById('accentColor').value=acEff;
-  document.getElementById('bgColorSwatch').style.background=bgEff;
-  document.getElementById('accentColorSwatch').style.background=acEff;
-  applyTextColor();                  // user text-color override wins on top
-}
-function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
-function saveCustomTheme(){try{
-  if(customTheme)localStorage.setItem('usa_customtheme_v1',JSON.stringify(customTheme));
-  else localStorage.removeItem('usa_customtheme_v1');
-}catch(e){}}
-function loadCustomTheme(){try{return JSON.parse(localStorage.getItem('usa_customtheme_v1'))||null;}catch(e){return null;}}
-
-function updateCustom(part,val){
-  // start from current effective colors so changing one keeps the other
-  const base=customTheme||{bg:normHex(getCSS('--char')),accent:normHex(getCSS('--amber'))};
-  customTheme={bg:base.bg,accent:base.accent,[part]:val};
-  saveCustomTheme();applyCustomTheme();
-}
-document.getElementById('bgColor').addEventListener('input',e=>updateCustom('bg',e.target.value));
-document.getElementById('accentColor').addEventListener('input',e=>updateCustom('accent',e.target.value));
-document.getElementById('themeReset').onclick=()=>{
-  customTheme=null;saveCustomTheme();
-  applyTheme(savedTheme);            // re-apply the last preset
-  toast('Back to preset theme');
-};
-
-let savedTheme='amber';
-try{savedTheme=localStorage.getItem('usa_theme_v1')||'amber';}catch(e){}
-applyTheme(savedTheme);
-applyCustomTheme();   // layers a custom theme on top if one is saved
-
-/* ---------- Map right-click context menu ---------- */
+/* ---------- Context menu ---------- */
 const ctx=document.getElementById('ctxmenu');
 let ctxState=null;
-
 function openCtxMenu(domEvent,state){
-  domEvent.preventDefault();
-  ctxState=state;
+  domEvent.preventDefault();ctxState=state;
   if(state.type==='marker'){
     ctx.innerHTML=`
       <div class="ctxhdr">${esc(state.place.name)}</div>
-      <div class="ci" data-act="zoom">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        Zoom to this pin</div>
-      <div class="ci" data-act="editpin">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-        Edit name & label</div>
-      <div class="ci danger" data-act="delete">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-        Delete this pin</div>`;
+      <div class="ci" data-act="zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Zoom to this pin</div>
+      <div class="ci" data-act="editpin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit name &amp; label</div>
+      <div class="ci danger" data-act="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Delete this pin</div>`;
   }else{
     ctx.innerHTML=`
       <div class="ctxhdr">${state.lat.toFixed(4)}, ${state.lng.toFixed(4)}</div>
-      <div class="ci" data-act="add">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Add pin here ${selectedIcon}</div>`;
+      <div class="ci" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Add pin here</div>`;
   }
-  // position, keeping menu on-screen
-  const pad=8, mw=190, mh=state.type==='marker'?132:86;
-  let x=domEvent.clientX, y=domEvent.clientY;
+  const pad=8,mw=190,mh=state.type==='marker'?132:64;
+  let x=domEvent.clientX,y=domEvent.clientY;
   if(x+mw+pad>window.innerWidth)x=window.innerWidth-mw-pad;
   if(y+mh+pad>window.innerHeight)y=window.innerHeight-mh-pad;
-  ctx.style.left=x+'px';ctx.style.top=y+'px';
-  ctx.classList.add('show');
-
-  ctx.querySelectorAll('.ci').forEach(el=>{
-    el.onclick=()=>{handleCtxAction(el.dataset.act);closeCtxMenu();};
-  });
+  ctx.style.left=x+'px';ctx.style.top=y+'px';ctx.classList.add('show');
+  ctx.querySelectorAll('.ci').forEach(el=>{el.onclick=()=>{handleCtxAction(el.dataset.act);closeCtxMenu();};});
 }
 function closeCtxMenu(){ctx.classList.remove('show');ctxState=null;}
 ctx.addEventListener('click',e=>e.stopPropagation());
-
 function handleCtxAction(act){
   if(!ctxState)return;
   if(act==='delete')removePlace(ctxState.place.id);
-  else if(act==='zoom'){map.flyTo([ctxState.place.lat,ctxState.place.lng],9);
-    markers[ctxState.place.id].openPopup();}
+  else if(act==='zoom'){map.flyTo([ctxState.place.lat,ctxState.place.lng],9);markers[ctxState.place.id].openPopup();}
   else if(act==='editpin')editPin(ctxState.place.id);
   else if(act==='add')addPlaceAt(ctxState.lat,ctxState.lng);
 }
 
-/* ---------- Edit a pin's name & label ---------- */
+/* ---------- Edit ---------- */
 function editPin(id){
   const p=places.find(x=>x.id===id);if(!p)return;
   const newName=window.prompt('Place name:',p.name);
-  if(newName===null)return;                 // cancelled — leave pin unchanged
+  if(newName===null)return;
   const newLabel=window.prompt(`Label for “${newName.trim()||p.name}” (optional):`,p.label||'');
-  if(newLabel===null)return;                // cancelled
+  if(newLabel===null)return;
   if(newName.trim())p.name=newName.trim();
-  p.label=newLabel.trim();
-  save();
+  p.label=newLabel.trim();save();
   const m=markers[id];
   m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
   m.setTooltipContent(tipText(p));
-  renderList();
-  toast('Pin updated');
+  renderList();toast('Pin updated');
 }
 
-// right-click on empty map
-map.on('contextmenu',e=>{
-  openCtxMenu(e.originalEvent,{type:'map',lat:e.latlng.lat,lng:e.latlng.lng});
-});
-// dismiss
+/* map right-click + dismiss */
+map.on('contextmenu',e=>openCtxMenu(e.originalEvent,{type:'map',lat:e.latlng.lat,lng:e.latlng.lng}));
 document.addEventListener('click',()=>closeCtxMenu());
 map.on('movestart zoomstart',()=>closeCtxMenu());
 window.addEventListener('scroll',()=>closeCtxMenu(),true);
 
-/* add a pin at arbitrary coordinates, reverse-geocoding a name */
 async function addPlaceAt(lat,lng){
   const label=document.getElementById('label').value.trim();
-  const icon=selectedIcon;
-  let name=`Pin (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
-  const p=addPlace(name,lat,lng,label,icon,true);
+  const p=addPlace(`Pin (${lat.toFixed(3)}, ${lng.toFixed(3)})`,lat,lng,label,true);
   document.getElementById('label').value='';
-  // try to give it a real place name
   try{
-    const url=`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lng}`;
-    const r=await fetch(url,{headers:{'Accept-Language':'en'}});
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lng}`,{headers:{'Accept-Language':'en'}});
     const d=await r.json();
     if(d&&d.address){
       const a=d.address;
@@ -954,18 +708,15 @@ async function addPlaceAt(lat,lng){
       const region=a.state&&a.state!==place?`, ${a.state}`:'';
       const country=a.country?`, ${a.country}`:'';
       const full=place?place+region+country:'';
-      if(full){
-        p.name=full;save();
+      if(full){p.name=full;save();
         const m=markers[p.id];
         m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
-        m.setTooltipContent(tipText(p));
-        renderList();
-      }
+        m.setTooltipContent(tipText(p));renderList();}
     }
-  }catch(e){/* keep coordinate name */}
+  }catch(e){}
 }
 
-/* ---------- Geocoding search (Nominatim / OpenStreetMap) ---------- */
+/* ---------- Search ---------- */
 const search=document.getElementById('search');
 const results=document.getElementById('results');
 let timer=null;
@@ -977,346 +728,197 @@ search.addEventListener('input',()=>{
 });
 async function doGeocode(q){
   try{
-    const url=`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
-    const r=await fetch(url,{headers:{'Accept-Language':'en'}});
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`,{headers:{'Accept-Language':'en'}});
     const data=await r.json();
     if(!data.length){results.innerHTML='<div class="hint">No matches found.</div>';return;}
     results.innerHTML='';
     data.forEach(d=>{
-      const div=document.createElement('div');
-      div.textContent=d.display_name;
+      const div=document.createElement('div');div.textContent=d.display_name;
       div.onclick=()=>{
         const a=d.address||{};
         const place=a.city||a.town||a.village||a.hamlet||a.county||a.state||d.display_name.split(',')[0];
         const region=a.state&&a.state!==place?`, ${a.state}`:'';
         const country=a.country?`, ${a.country}`:'';
-        const name=place+region+country;
-        addPlace(name,parseFloat(d.lat),parseFloat(d.lon),
-                 document.getElementById('label').value.trim(),selectedIcon);
+        addPlace(place+region+country,parseFloat(d.lat),parseFloat(d.lon),document.getElementById('label').value.trim());
         search.value='';document.getElementById('label').value='';
-        results.classList.remove('show');
-        autoCloseOnAction();
+        results.classList.remove('show');autoCloseOnAction();
       };
       results.appendChild(div);
     });
   }catch(e){results.innerHTML='<div class="hint">Search failed — check connection.</div>';}
 }
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.searchwrap'))results.classList.remove('show');
-});
+document.addEventListener('click',e=>{if(!e.target.closest('.searchwrap'))results.classList.remove('show');});
 
-/* ---------- Persistence ----------
-   Shared source of truth: places.json committed in the repo.
-   localStorage is a local working cache / offline fallback. */
+/* ---------- Persistence ---------- */
 function save(){try{localStorage.setItem('usa_places_v1',JSON.stringify(places));}catch(e){}}
 function load(){try{return JSON.parse(localStorage.getItem('usa_places_v1'))||[];}catch(e){return[];}}
 function saveShowLabels(){try{localStorage.setItem('usa_showlabels_v1',showLabels?'1':'0');}catch(e){}}
 function loadShowLabels(){try{return localStorage.getItem('usa_showlabels_v1')==='1';}catch(e){return false;}}
 
-/* re-draw every marker + the list from the current `places` array */
 function refreshAll(){
   Object.values(markers).forEach(m=>map.removeLayer(m));
   for(const k in markers)delete markers[k];
-  places.forEach(renderMarker);
-  renderList();
+  places.forEach(renderMarker);renderList();
 }
-
-/* fetch the shared places.json from the repo and adopt it as the source of truth */
 async function loadSharedPlaces(){
   try{
-    // cache-bust so a fresh commit shows up without a hard refresh
     const r=await fetch('places.json?t='+Date.now(),{cache:'no-store'});
-    if(!r.ok)throw new Error('no file');
+    if(!r.ok)throw 0;
     const data=await r.json();
-    if(Array.isArray(data)){
-      places=data;
-      save();                 // mirror into the local cache
-      refreshAll();
-      setStatus('shared',data.length);
-      return;
-    }
-    throw new Error('bad format');
-  }catch(e){
-    // no places.json yet (or offline) — keep whatever localStorage gave us
-    setStatus(places.length?'local':'empty',places.length);
-  }
+    if(Array.isArray(data)){places=data;save();refreshAll();setStatus('shared',data.length);return;}
+    throw 0;
+  }catch(e){setStatus(places.length?'local':'empty',places.length);}
 }
 
-/* ---------- GitHub auto-publish config ----------
-   Token is kept ONLY in this browser's localStorage — never committed,
-   never written into the page that visitors load. */
+/* ---------- GitHub publish ---------- */
 function loadGH(){try{return JSON.parse(localStorage.getItem('usa_gh_v1'))||{};}catch(e){return{};}}
-function saveGH(cfg){try{localStorage.setItem('usa_gh_v1',JSON.stringify(cfg));}catch(e){}}
+function saveGH(c){try{localStorage.setItem('usa_gh_v1',JSON.stringify(c));}catch(e){}}
 let gh=loadGH();
-
-/* best-effort auto-detect owner/repo/branch from a github.io URL */
 function detectRepo(){
   const out={owner:'',repo:'',branch:'main'};
-  const host=location.hostname;            // e.g. eforoutan.github.io
-  const m=host.match(/^([^.]+)\.github\.io$/i);
-  if(m){
-    out.owner=m[1];
-    const seg=location.pathname.split('/').filter(Boolean);
-    // user/org page (eforoutan.github.io) -> repo is "<owner>.github.io"
-    out.repo=seg.length?seg[0]:`${m[1]}.github.io`;
-  }
+  const m=location.hostname.match(/^([^.]+)\.github\.io$/i);
+  if(m){out.owner=m[1];const seg=location.pathname.split('/').filter(Boolean);
+    out.repo=seg.length?seg[0]:`${m[1]}.github.io`;}
   return out;
 }
-
 function downloadJSON(){
   const blob=new Blob([JSON.stringify(places,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='places.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='places.json';a.click();
 }
-
-/* base64-encode UTF-8 safely (handles emoji in labels) */
-function toB64(str){
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-/* commit places.json via the GitHub Contents API */
+function toB64(str){return btoa(unescape(encodeURIComponent(str)));}
+async function safeErr(res){try{const j=await res.json();return j.message||'';}catch(e){return '';}}
 async function publishToGitHub(){
-  const token=(gh.token||'').trim();
-  const owner=(gh.owner||'').trim();
-  const repo=(gh.repo||'').trim();
-  const branch=(gh.branch||'main').trim();
+  const token=(gh.token||'').trim(),owner=(gh.owner||'').trim(),repo=(gh.repo||'').trim(),branch=(gh.branch||'main').trim();
   if(!token||!owner||!repo)throw new Error('Missing token, owner, or repo — open Settings.');
-
   const api=`https://api.github.com/repos/${owner}/${repo}/contents/places.json`;
-  const headers={'Authorization':`Bearer ${token}`,
-                 'Accept':'application/vnd.github+json',
-                 'X-GitHub-Api-Version':'2022-11-28'};
-
-  // 1) get current file SHA (needed to update an existing file); 404 = new file
+  const headers={'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
   let sha=null;
   const get=await fetch(`${api}?ref=${encodeURIComponent(branch)}`,{headers});
-  if(get.status===200){const j=await get.json();sha=j.sha;}
-  else if(get.status!==404){
-    const t=await safeErr(get);throw new Error(`Read failed (${get.status}) ${t}`);
-  }
-
-  // 2) PUT new content
-  const body={
-    message:`Update places.json (${places.length} pins) via map app`,
-    content:toB64(JSON.stringify(places,null,2)),
-    branch
-  };
+  if(get.status===200){sha=(await get.json()).sha;}
+  else if(get.status!==404){throw new Error(`Read failed (${get.status}) ${await safeErr(get)}`);}
+  const body={message:`Update places.json (${places.length} pins) via map app`,content:toB64(JSON.stringify(places,null,2)),branch};
   if(sha)body.sha=sha;
   const put=await fetch(api,{method:'PUT',headers,body:JSON.stringify(body)});
-  if(!(put.status===200||put.status===201)){
-    const t=await safeErr(put);throw new Error(`Publish failed (${put.status}) ${t}`);
-  }
+  if(!(put.status===200||put.status===201))throw new Error(`Publish failed (${put.status}) ${await safeErr(put)}`);
   return true;
 }
-async function safeErr(res){
-  try{const j=await res.json();return j.message||'';}catch(e){return '';}
-}
-
 function setStatus(kind,n){
   const el=document.getElementById('dataStatus');if(!el)return;
-  if(kind==='shared')el.textContent=`Showing shared map · ${n} pin${n===1?'':'s'}`;
-  else if(kind==='local')el.textContent=`Showing local pins · not yet published`;
+  if(kind==='shared')el.textContent=`Shared map · ${n} pin${n===1?'':'s'}`;
+  else if(kind==='local')el.textContent='Local pins · not yet published';
   else if(kind==='publishing')el.textContent='Publishing to GitHub…';
-  else if(kind==='published')el.textContent=`Published · ${n} pin${n===1?'':'s'} · live in ~1–2 min`;
+  else if(kind==='published')el.textContent=`Published · live in ~1–2 min`;
   else el.textContent='No shared map found · add pins, then publish';
 }
-
-/* ---------- Publish button: API if token configured, else download ---------- */
 const exportBtn=document.getElementById('exportBtn');
 exportBtn.onclick=async()=>{
-  if(gh.token && gh.owner && gh.repo){
-    const prev=exportBtn.textContent;
-    exportBtn.disabled=true;exportBtn.textContent='Publishing…';
+  if(gh.token&&gh.owner&&gh.repo){
+    exportBtn.disabled=true;const prev=exportBtn.innerHTML;exportBtn.textContent='Publishing…';
     setStatus('publishing');
-    try{
-      await publishToGitHub();
-      setStatus('published',places.length);
-      toast('Published to GitHub ✓');
-    }catch(err){
-      setStatus('local',places.length);
-      toast('Publish failed — see Settings');
-      ghMsg('err',err.message||'Publish failed.');
-      settingsModal.classList.add('show');
-    }finally{
-      exportBtn.disabled=false;exportBtn.textContent=prev;
-    }
-  }else{
-    // no token configured -> fall back to download + instructions
-    downloadJSON();
-    publishModal.classList.add('show');
-  }
+    try{await publishToGitHub();setStatus('published',places.length);toast('Published to GitHub ✓');}
+    catch(err){setStatus('local',places.length);toast('Publish failed — see Settings');ghMsg('err',err.message||'Publish failed.');settingsModal.classList.add('show');}
+    finally{exportBtn.disabled=false;exportBtn.innerHTML=prev;}
+  }else{downloadJSON();publishModal.classList.add('show');}
 };
 
-/* About modal */
+/* ---------- Modals ---------- */
 const aboutModal=document.getElementById('aboutModal');
 document.getElementById('aboutBtn').onclick=()=>aboutModal.classList.add('show');
 document.getElementById('aboutClose').onclick=()=>aboutModal.classList.remove('show');
 aboutModal.addEventListener('click',e=>{if(e.target===aboutModal)aboutModal.classList.remove('show');});
-
-/* Publish (download) modal */
 const publishModal=document.getElementById('publishModal');
 document.getElementById('publishClose').onclick=()=>publishModal.classList.remove('show');
 publishModal.addEventListener('click',e=>{if(e.target===publishModal)publishModal.classList.remove('show');});
 
-/* ---------- Settings modal ---------- */
 const settingsModal=document.getElementById('settingsModal');
 const $tok=document.getElementById('ghToken'),$own=document.getElementById('ghOwner'),
       $rep=document.getElementById('ghRepo'),$brn=document.getElementById('ghBranch');
-function ghMsg(cls,txt){const e=document.getElementById('ghMsg');
-  e.className='setmsg '+(cls||'');e.textContent=txt||'';}
-function fillSettings(){
-  const d=detectRepo();
-  $tok.value=gh.token||'';
-  $own.value=gh.owner||d.owner||'';
-  $rep.value=gh.repo||d.repo||'';
-  $brn.value=gh.branch||d.branch||'main';
-  ghMsg('',''); 
-}
+function ghMsg(cls,txt){const e=document.getElementById('ghMsg');e.className='setmsg '+(cls||'');e.textContent=txt||'';}
+function fillSettings(){const d=detectRepo();
+  $tok.value=gh.token||'';$own.value=gh.owner||d.owner||'';$rep.value=gh.repo||d.repo||'';$brn.value=gh.branch||d.branch||'main';ghMsg('','');}
 document.getElementById('settingsBtn').onclick=()=>{fillSettings();settingsModal.classList.add('show');};
 document.getElementById('settingsClose').onclick=()=>settingsModal.classList.remove('show');
 settingsModal.addEventListener('click',e=>{if(e.target===settingsModal)settingsModal.classList.remove('show');});
-
 document.getElementById('ghSave').onclick=()=>{
-  gh={token:$tok.value.trim(),owner:$own.value.trim(),
-      repo:$rep.value.trim(),branch:($brn.value.trim()||'main')};
+  gh={token:$tok.value.trim(),owner:$own.value.trim(),repo:$rep.value.trim(),branch:($brn.value.trim()||'main')};
   saveGH(gh);
-  if(gh.token&&gh.owner&&gh.repo)ghMsg('ok','Saved. Publish will now commit directly to GitHub.');
-  else ghMsg('ok','Saved. Publish will use the download method until a token is added.');
+  ghMsg('ok',(gh.token&&gh.owner&&gh.repo)?'Saved. Publish will commit directly to GitHub.':'Saved. Publish uses download until a token is added.');
 };
-document.getElementById('ghClear').onclick=()=>{
-  gh={};saveGH(gh);fillSettings();
-  ghMsg('ok','Token cleared. Publish falls back to download.');
-};
+document.getElementById('ghClear').onclick=()=>{gh={};saveGH(gh);fillSettings();ghMsg('ok','Token cleared. Publish falls back to download.');};
 document.getElementById('ghTest').onclick=async()=>{
-  const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim(),
-        branch=$brn.value.trim()||'main';
+  const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim();
   if(!token||!owner||!repo){ghMsg('err','Fill in token, owner, and repository first.');return;}
   ghMsg('busy','Testing connection…');
   try{
-    const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{
-      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json',
-               'X-GitHub-Api-Version':'2022-11-28'}});
-    if(r.status===200){
-      const j=await r.json();
-      const canWrite=j.permissions&&j.permissions.push;
-      if(canWrite)ghMsg('ok',`✓ Connected to ${j.full_name}. Write access confirmed.`);
-      else ghMsg('err',`Connected to ${j.full_name}, but the token lacks write (Contents: Read and write) permission.`);
-    }else if(r.status===401)ghMsg('err','Token rejected (401). Check the token value.');
-    else if(r.status===404)ghMsg('err','Repo not found (404). Check owner/repo, and that the token can access this repo.');
+    const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}});
+    if(r.status===200){const j=await r.json();
+      (j.permissions&&j.permissions.push)?ghMsg('ok',`✓ Connected to ${j.full_name}. Repo reachable. (If Publish still 403s, set the token's Contents permission to Read and write.)`):ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission.`);}
+    else if(r.status===401)ghMsg('err','Token rejected (401). Check the token value.');
+    else if(r.status===404)ghMsg('err','Repo not found (404). Check owner/repo and token access.');
     else ghMsg('err',`Unexpected response (${r.status}).`);
   }catch(e){ghMsg('err','Network error — could not reach GitHub.');}
 };
-
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){
-  aboutModal.classList.remove('show');publishModal.classList.remove('show');
-  settingsModal.classList.remove('show');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){aboutModal.classList.remove('show');publishModal.classList.remove('show');settingsModal.classList.remove('show');}});
 
 /* ---------- utils ---------- */
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 let tt;
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;
-  t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200);}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200);}
 
-/* ---------- label toggle ---------- */
+/* ---------- Labels toggle ---------- */
 const labelChk=document.getElementById('labelChk');
 labelChk.checked=showLabels;
-labelChk.addEventListener('change',()=>{
-  showLabels=labelChk.checked;saveShowLabels();applyShowLabels();
-  toast(showLabels?'Labels shown':'Labels hidden');
-});
+labelChk.addEventListener('change',()=>{showLabels=labelChk.checked;saveShowLabels();applyShowLabels();toast(showLabels?'Labels shown':'Labels hidden');});
 
-/* ---------- Mobile bottom sheet ---------- */
-const panel=document.getElementById('panel');
-const scrim=document.getElementById('scrim');
-const fab=document.getElementById('fab');
-const sheetHandle=document.getElementById('sheetHandle');
+/* ---------- Mobile sheet ---------- */
+const panel=document.getElementById('panel'),scrim=document.getElementById('scrim'),
+      fab=document.getElementById('fab'),sheetHandle=document.getElementById('sheetHandle');
 const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
-
-function openSheet(){
-  if(!isMobile())return;
-  panel.classList.add('open');
-  scrim.classList.add('show');
-  fab.style.display='none';
-}
-function closeSheet(){
-  panel.classList.remove('open');
-  scrim.classList.remove('show');
-  if(isMobile())fab.style.display='flex';
-}
-fab.addEventListener('click',openSheet);
-scrim.addEventListener('click',closeSheet);
-
-/* tap handle toggles; drag handle down dismisses */
+function openSheet(){if(!isMobile())return;panel.classList.add('open');scrim.classList.add('show');fab.style.display='none';}
+function closeSheet(){panel.classList.remove('open');scrim.classList.remove('show');if(isMobile())fab.style.display='flex';}
+fab.addEventListener('click',openSheet);scrim.addEventListener('click',closeSheet);
 let dragStartY=null,dragDelta=0;
-sheetHandle.addEventListener('click',()=>{
-  if(dragDelta>6)return;                 // ignore click that ended a drag
-  closeSheet();
-});
-sheetHandle.addEventListener('touchstart',e=>{
-  dragStartY=e.touches[0].clientY;dragDelta=0;
-  panel.style.transition='none';
-},{passive:true});
-sheetHandle.addEventListener('touchmove',e=>{
-  if(dragStartY===null)return;
-  dragDelta=e.touches[0].clientY-dragStartY;
-  if(dragDelta>0)panel.style.transform=`translateY(${dragDelta}px)`;
-},{passive:true});
-sheetHandle.addEventListener('touchend',()=>{
-  panel.style.transition='';panel.style.transform='';
-  if(dragDelta>90)closeSheet();          // dragged down far enough -> close
-  dragStartY=null;
-});
-
-/* after the map resizes (sheet open/close / rotate), tell Leaflet */
+sheetHandle.addEventListener('click',()=>{if(dragDelta>6)return;closeSheet();});
+sheetHandle.addEventListener('touchstart',e=>{dragStartY=e.touches[0].clientY;dragDelta=0;panel.style.transition='none';},{passive:true});
+sheetHandle.addEventListener('touchmove',e=>{if(dragStartY===null)return;dragDelta=e.touches[0].clientY-dragStartY;if(dragDelta>0)panel.style.transform=`translateY(${dragDelta}px)`;},{passive:true});
+sheetHandle.addEventListener('touchend',()=>{panel.style.transition='';panel.style.transform='';if(dragDelta>90)closeSheet();dragStartY=null;});
 function fixMapSize(){setTimeout(()=>map.invalidateSize(),350);}
 panel.addEventListener('transitionend',e=>{if(e.propertyName==='transform')fixMapSize();});
 window.addEventListener('resize',()=>{map.invalidateSize();syncMobileState();});
 window.addEventListener('orientationchange',fixMapSize);
-
-/* keep the sheet in the right resting state for the current viewport */
 function syncMobileState(){
-  if(isMobile()){
-    if(!panel.classList.contains('open'))fab.style.display='flex';
-  }else{
-    panel.classList.remove('open');
-    scrim.classList.remove('show');
-    panel.style.transform='';
-    fab.style.display='none';
-  }
+  if(isMobile()){if(!panel.classList.contains('open'))fab.style.display='flex';}
+  else{panel.classList.remove('open');scrim.classList.remove('show');panel.style.transform='';fab.style.display='none';}
 }
 syncMobileState();
-
-/* when a city is picked or a pin added on mobile, close the sheet so the map is visible */
 function autoCloseOnAction(){if(isMobile())closeSheet();}
 
-/* ---------- Long-press = "right-click" on touch devices ---------- */
-let lpTimer=null,lpStart=null,lpMoved=false;
+/* ---------- Long-press = right-click on touch ---------- */
+let lpTimer=null,lpStart=null;
 const mapEl=document.getElementById('map');
 function clearLP(){if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}}
 mapEl.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
-  const t=e.touches[0];lpStart={x:t.clientX,y:t.clientY};lpMoved=false;
-  clearLP();
+  const t=e.touches[0];lpStart={x:t.clientX,y:t.clientY};clearLP();
   lpTimer=setTimeout(()=>{
-    // translate screen point to map latlng and open the add menu
-    const pt=map.containerPointToLatLng(
-      map.mouseEventToContainerPoint({clientX:lpStart.x,clientY:lpStart.y}));
-    openCtxMenu({clientX:lpStart.x,clientY:lpStart.y,preventDefault(){}},
-      {type:'map',lat:pt.lat,lng:pt.lng});
+    const pt=map.containerPointToLatLng(map.mouseEventToContainerPoint({clientX:lpStart.x,clientY:lpStart.y}));
+    openCtxMenu({clientX:lpStart.x,clientY:lpStart.y,preventDefault(){}},{type:'map',lat:pt.lat,lng:pt.lng});
     if(navigator.vibrate)navigator.vibrate(15);
   },550);
 },{passive:true});
-mapEl.addEventListener('touchmove',e=>{
-  if(!lpStart)return;const t=e.touches[0];
-  if(Math.abs(t.clientX-lpStart.x)>10||Math.abs(t.clientY-lpStart.y)>10){lpMoved=true;clearLP();}
-},{passive:true});
+mapEl.addEventListener('touchmove',e=>{if(!lpStart)return;const t=e.touches[0];if(Math.abs(t.clientX-lpStart.x)>10||Math.abs(t.clientY-lpStart.y)>10)clearLP();},{passive:true});
 mapEl.addEventListener('touchend',clearLP,{passive:true});
 
+/* ---------- Basemap switcher ---------- */
+document.querySelectorAll('.bm-opt').forEach(b=>{
+  b.addEventListener('click',()=>applyBasemap(b.dataset.bm));
+});
+
 /* ---------- init ---------- */
-renderIconPicker();
+applyBasemap(basemap);
 places.forEach(renderMarker);
 renderList();
-loadSharedPlaces();   // then reconcile with the shared places.json from the repo
+loadSharedPlaces();
 </script>
 </body>
 </html>
