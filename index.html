@@ -232,6 +232,48 @@
     .bm-opt{padding:9px 11px}
   }
 
+  /* active state for the Select button */
+  .minibtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .minibtn.icon{padding:5px 7px}
+
+  /* draw-mode instruction bar */
+  .drawbar{position:absolute;top:12px;left:50%;transform:translateX(-50%) translateY(-150%);
+    z-index:1300;display:flex;align-items:center;gap:12px;background:var(--ink);color:#fff;
+    padding:9px 10px 9px 16px;border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.35);
+    transition:transform .25s;font-size:12.5px;font-weight:600;white-space:nowrap;max-width:94vw}
+  .drawbar.show{transform:translateX(-50%) translateY(0)}
+  .drawbar .dbtn{border:none;border-radius:6px;padding:7px 13px;font-family:inherit;
+    font-size:12px;font-weight:700;cursor:pointer}
+  .drawbar .finish{background:var(--accent);color:#fff}
+  .drawbar .finish:hover{background:var(--accent-dark)}
+  .drawbar .cancel{background:rgba(255,255,255,.16);color:#fff}
+  .drawbar .cancel:hover{background:rgba(255,255,255,.28)}
+
+  /* selection result chip */
+  .selresult{position:absolute;bottom:24px;left:50%;transform:translateX(-50%) translateY(180%);
+    z-index:1100;display:flex;align-items:center;gap:12px;background:#fff;
+    border:1px solid var(--line-strong);border-radius:10px;padding:12px 14px 12px 18px;
+    box-shadow:var(--shadow);transition:transform .28s}
+  .selresult.show{transform:translateX(-50%) translateY(0)}
+  .selresult .srnum{font-family:'Barlow Semi Condensed',sans-serif;font-size:30px;
+    font-weight:700;line-height:.9;color:var(--accent)}
+  .selresult .srlabel{font-size:12px;color:var(--ink-2);font-weight:600;line-height:1.2;max-width:90px}
+  .selresult .srclear{margin-left:4px;border:1px solid var(--line);background:var(--bg-2);
+    color:var(--ink-2);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:12px;
+    font-family:inherit}
+  .selresult .srclear:hover{color:var(--ink);border-color:var(--line-strong)}
+
+  /* drawing cursor + highlighted pins */
+  .drawing .leaflet-container{cursor:crosshair}
+  .pin.hit .head{background:#ff6a00;border-color:#fff;
+    box-shadow:0 0 0 4px rgba(255,106,0,.3),0 2px 5px rgba(0,0,0,.4)}
+
+  @media(max-width:760px){
+    .selresult{bottom:auto;top:64px}
+    .drawbar{top:auto;bottom:24px;flex-wrap:wrap;justify-content:center;white-space:normal;text-align:center}
+    .drawbar.show{transform:translateX(-50%) translateY(0)}
+  }
+
   .list::-webkit-scrollbar,.results::-webkit-scrollbar{width:9px}
   .list::-webkit-scrollbar-thumb,.results::-webkit-scrollbar-thumb{
     background:var(--line-strong);border-radius:5px;border:2px solid var(--bg)}
@@ -383,6 +425,12 @@
       <h2>Locations</h2>
       <div class="right">
         <span class="count" id="count">0</span>
+        <button class="minibtn icon" id="selPolyBtn" title="Select pins with a polygon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 21 8v8l-9 6-9-6V8z"/></svg>
+        </button>
+        <button class="minibtn icon" id="selRectBtn" title="Select pins with a rectangle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+        </button>
         <button class="minibtn" id="fitBtn" title="Zoom to all pins">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
           Extent
@@ -431,6 +479,18 @@
     </button>
   </div>
   <div class="scrim" id="scrim"></div>
+
+  <div class="drawbar" id="drawbar">
+    <span class="dtext" id="drawText">Click on the map to draw</span>
+    <button class="dbtn finish" id="drawFinish">Finish</button>
+    <button class="dbtn cancel" id="drawCancel">Cancel</button>
+  </div>
+
+  <div class="selresult" id="selResult">
+    <div class="srnum"><span id="srCount">0</span></div>
+    <div class="srlabel">pins in selection</div>
+    <button class="srclear" id="srClear" title="Clear selection">✕</button>
+  </div>
   <button class="fab" id="fab" title="Open panel" aria-label="Open panel">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
@@ -617,6 +677,169 @@ function fitToExtent(){
   map.flyToBounds(bounds,{padding:[60,60],maxZoom:9,duration:.8});
 }
 document.getElementById('fitBtn').onclick=fitToExtent;
+
+/* ---------- Polygon selection tool ---------- */
+let drawing=false, drawMode=null, drawPts=[], drawLine=null, drawPoly=null, drawVerts=[];
+let rectCornerA=null, rectShape=null;
+const selPolyBtn=document.getElementById('selPolyBtn');
+const selRectBtn=document.getElementById('selRectBtn');
+const drawbar=document.getElementById('drawbar');
+const selResult=document.getElementById('selResult');
+
+selPolyBtn.onclick=()=>{ (drawing&&drawMode==='poly')?cancelDraw():startDraw('poly'); };
+selRectBtn.onclick=()=>{ (drawing&&drawMode==='rect')?cancelDraw():startDraw('rect'); };
+document.getElementById('drawFinish').onclick=finishDraw;
+document.getElementById('drawCancel').onclick=cancelDraw;
+document.getElementById('srClear').onclick=clearSelection;
+
+function startDraw(mode){
+  clearSelection();
+  if(drawing)exitDrawMode();
+  drawing=true;drawMode=mode;drawPts=[];drawVerts=[];rectCornerA=null;
+  (mode==='rect'?selRectBtn:selPolyBtn).classList.add('active');
+  document.body.classList.add('drawing');
+  drawbar.classList.add('show');
+  setDrawText();
+  if(isMobile())closeSheet();
+  if(mode==='poly'){
+    map.on('click',onPolyClick);
+    map.doubleClickZoom.disable();
+    map.on('dblclick',finishDraw);
+    document.getElementById('drawFinish').style.display='';
+  }else{
+    map.on('click',onRectClick);
+    map.on('mousemove',onRectMove);
+    document.getElementById('drawFinish').style.display='none'; // rect finishes on 2nd click
+  }
+}
+function setDrawText(){
+  const el=document.getElementById('drawText');
+  if(drawMode==='rect'){
+    el.textContent = rectCornerA ? 'Click the opposite corner to finish'
+                                 : 'Click one corner of the rectangle';
+  }else{
+    const n=drawPts.length;
+    el.textContent = n<3 ? `Click on the map to add points (${n}/3 minimum)`
+                         : `${n} points · click to add more, or Finish`;
+  }
+}
+
+/* ---- polygon mode ---- */
+function onPolyClick(e){
+  drawPts.push([e.latlng.lat,e.latlng.lng]);
+  const v=L.circleMarker(e.latlng,{radius:4,color:'#fff',weight:2,
+    fillColor:(themeColor||DEFAULT_ACCENT),fillOpacity:1}).addTo(map);
+  drawVerts.push(v);
+  redrawPoly();
+  setDrawText();
+}
+function redrawPoly(){
+  if(drawLine){map.removeLayer(drawLine);drawLine=null;}
+  if(drawPoly){map.removeLayer(drawPoly);drawPoly=null;}
+  const accent=(themeColor||DEFAULT_ACCENT);
+  if(drawPts.length>=3){
+    drawPoly=L.polygon(drawPts,{color:accent,weight:2,fillColor:accent,
+      fillOpacity:.12,dashArray:'4 4'}).addTo(map);
+  }else if(drawPts.length>=2){
+    drawLine=L.polyline(drawPts,{color:accent,weight:2,dashArray:'4 4'}).addTo(map);
+  }
+}
+
+/* ---- rectangle mode ---- */
+function onRectClick(e){
+  if(!rectCornerA){
+    rectCornerA=e.latlng;
+    setDrawText();
+  }else{
+    drawRect(e.latlng);          // lock in second corner
+    finishDraw();
+  }
+}
+function onRectMove(e){
+  if(rectCornerA)drawRect(e.latlng);
+}
+function drawRect(cornerB){
+  const accent=(themeColor||DEFAULT_ACCENT);
+  const bounds=L.latLngBounds(rectCornerA,cornerB);
+  if(rectShape){rectShape.setBounds(bounds);}
+  else{rectShape=L.rectangle(bounds,{color:accent,weight:2,fillColor:accent,
+    fillOpacity:.12,dashArray:'4 4'}).addTo(map);}
+}
+
+function finishDraw(){
+  if(drawMode==='rect'){
+    if(!rectShape){toast('Click two opposite corners');return;}
+    const b=rectShape.getBounds();
+    drawPts=[
+      [b.getNorth(),b.getWest()],[b.getNorth(),b.getEast()],
+      [b.getSouth(),b.getEast()],[b.getSouth(),b.getWest()]
+    ];
+    exitDrawMode();
+    computeSelection();
+  }else{
+    if(drawPts.length<3){toast('Add at least 3 points');return;}
+    exitDrawMode();
+    computeSelection();
+  }
+}
+function cancelDraw(){
+  exitDrawMode();
+  clearShape();
+}
+function exitDrawMode(){
+  drawing=false;
+  selPolyBtn.classList.remove('active');
+  selRectBtn.classList.remove('active');
+  document.body.classList.remove('drawing');
+  drawbar.classList.remove('show');
+  map.off('click',onPolyClick);
+  map.off('click',onRectClick);
+  map.off('mousemove',onRectMove);
+  map.off('dblclick',finishDraw);
+  map.doubleClickZoom.enable();
+  document.getElementById('drawFinish').style.display='';
+  drawMode=null;rectCornerA=null;
+}
+function clearShape(){
+  if(drawLine){map.removeLayer(drawLine);drawLine=null;}
+  if(drawPoly){map.removeLayer(drawPoly);drawPoly=null;}
+  if(rectShape){map.removeLayer(rectShape);rectShape=null;}
+  drawVerts.forEach(v=>map.removeLayer(v));drawVerts=[];
+  drawPts=[];rectCornerA=null;
+}
+function clearSelection(){
+  clearShape();
+  selResult.classList.remove('show');
+  highlightPins([]);
+}
+
+/* ray-casting point-in-polygon; poly = [[lat,lng],...] */
+function pointInPolygon(lat,lng,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const yi=poly[i][0],xi=poly[i][1],yj=poly[j][0],xj=poly[j][1];
+    const intersect=((yi>lat)!==(yj>lat)) &&
+      (lng < (xj-xi)*(lat-yi)/(yj-yi)+xi);
+    if(intersect)inside=!inside;
+  }
+  return inside;
+}
+function computeSelection(){
+  const hits=places.filter(p=>pointInPolygon(p.lat,p.lng,drawPts));
+  highlightPins(hits.map(p=>p.id));
+  document.getElementById('srCount').textContent=hits.length;
+  selResult.classList.add('show');
+  toast(`${hits.length} pin${hits.length===1?'':'s'} inside the area`);
+}
+function highlightPins(ids){
+  const set=new Set(ids);
+  Object.entries(markers).forEach(([id,m])=>{
+    const el=m.getElement && m.getElement();
+    if(!el)return;
+    const pin=el.querySelector('.pin');
+    if(pin)pin.classList.toggle('hit',set.has(id));
+  });
+}
 
 /* ---------- Theme color picker (accent only) ---------- */
 const DEFAULT_ACCENT='#0079c1';
