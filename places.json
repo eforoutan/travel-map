@@ -80,14 +80,6 @@
     "icon": "📍"
   },
   {
-    "id": "1780498955474215",
-    "name": "Bassett, Nebraska",
-    "lat": 42.5867856,
-    "lng": -99.5377243,
-    "label": "",
-    "icon": "📍"
-  },
-  {
     "id": "1780499143252744",
     "name": "Dubai Emirate, UAE",
     "lat": 25.0742823,
@@ -236,6 +228,14 @@
     "name": "Philadelphia, Pennsylvania",
     "lat": 39.9527237,
     "lng": -75.1635262,
+    "label": "",
+    "icon": "📍"
+  },
+  {
+    "id": "1780589799005312",
+    "name": "UNL Barta Brothers Ranchm NE",
+    "lat": 42.22466819774443,
+    "lng": -99.63635087013246,
     "label": "",
     "icon": "📍"
   }
