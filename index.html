@@ -1135,7 +1135,7 @@ exportBtn.onclick=async()=>{
     exportBtn.disabled=true;const prev=exportBtn.innerHTML;exportBtn.textContent='Publishing…';
     setStatus('publishing');
     try{await publishToGitHub();setStatus('published',places.length);toast('Published to GitHub ✓');}
-    catch(err){setStatus('local',places.length);toast('Publish failed — see Settings');ghMsg('err',err.message||'Publish failed.');settingsModal.classList.add('show');}
+    catch(err){setStatus('local',places.length);ghMsg('err',err.message||'Publish failed.');toast(err.message||'Publish failed');}
     finally{exportBtn.disabled=false;exportBtn.innerHTML=prev;}
   }else{downloadJSON();publishModal.classList.add('show');}
 };
@@ -1171,18 +1171,35 @@ document.getElementById('ghSave').onclick=()=>{
 };
 document.getElementById('ghClear').onclick=()=>{gh={};saveGH(gh);fillSettings();ghMsg('ok','Token cleared. Publish falls back to download.');};
 document.getElementById('ghTest').onclick=async()=>{
-  ghSaveBtn.disabled=true;   // re-lock until this test passes
-  const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim();
+  ghSaveBtn.disabled=true;   // re-lock until this test fully passes
+  const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim(),branch=($brn.value.trim()||'main');
   if(!token||!owner||!repo){ghMsg('err','Fill in token, owner, and repository first.');return;}
+  const headers={'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
   ghMsg('busy','Testing connection…');
   try{
-    const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}});
-    if(r.status===200){const j=await r.json();
-      if(j.permissions&&j.permissions.push){ghMsg('ok',`✓ Connected to ${j.full_name}. Repo reachable. (If Publish still 403s, set the token's Contents permission to Read and write.)`);ghSaveBtn.disabled=false;}
-      else ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission.`);}
-    else if(r.status===401)ghMsg('err','Token rejected (401). Check the token value.');
-    else if(r.status===404)ghMsg('err','Repo not found (404). Check owner/repo and token access.');
-    else ghMsg('err',`Unexpected response (${r.status}).`);
+    // 1) Repo reachable?
+    const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers});
+    if(r.status===401){ghMsg('err','Token rejected (401). Check the token value.');return;}
+    if(r.status===404){ghMsg('err','Repo not found (404). Check owner/repo and token access.');return;}
+    if(r.status!==200){ghMsg('err',`Unexpected response (${r.status}).`);return;}
+    const j=await r.json();
+    if(!(j.permissions&&j.permissions.push)){
+      ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission. Set Contents to Read and write.`);return;
+    }
+    // 2) Contents-level write check — this is what Publish actually needs.
+    // Read the existing places.json (to get its sha) or confirm it's simply absent.
+    ghMsg('busy','Verifying write access to places.json…');
+    const api=`https://api.github.com/repos/${owner}/${repo}/contents/places.json`;
+    const get=await fetch(`${api}?ref=${encodeURIComponent(branch)}`,{headers});
+    if(get.status===403){
+      ghMsg('err',`Connected to ${j.full_name}, but the token's Contents permission is read-only (403). Set it to Read and write, then test again.`);return;
+    }
+    if(!(get.status===200||get.status===404)){
+      ghMsg('err',`Could not access Contents API (${get.status}) ${await safeErr(get)}`);return;
+    }
+    // Passed both checks — safe to enable Save/Publish.
+    ghMsg('ok',`✓ Connected to ${j.full_name} on "${branch}". Write access confirmed — Publish will commit directly.`);
+    ghSaveBtn.disabled=false;
   }catch(e){ghMsg('err','Network error — could not reach GitHub.');}
 };
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){aboutModal.classList.remove('show');publishModal.classList.remove('show');settingsModal.classList.remove('show');}});
