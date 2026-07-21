@@ -1118,6 +1118,9 @@ async function publishToGitHub(){
   const body={message:`Update places.json (${places.length} pins) via map app`,content:toB64(JSON.stringify(places,null,2)),branch};
   if(sha)body.sha=sha;
   const put=await fetch(api,{method:'PUT',headers,body:JSON.stringify(body)});
+  if(put.status===403){
+    throw new Error("Publish failed (403): the token can read this repo but can't write to it. On GitHub, set this token's Repository permissions → Contents → Read and write.");
+  }
   if(!(put.status===200||put.status===201))throw new Error(`Publish failed (${put.status}) ${await safeErr(put)}`);
   return true;
 }
