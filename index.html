@@ -360,6 +360,8 @@
   .sbtn.ghost{background:#fff;color:var(--ink)}
   .sbtn.ghost:hover{border-color:var(--accent);color:var(--accent)}
   .sbtn.danger{background:#fff;color:var(--danger);border-color:#e4b4ae}
+  .sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .sbtn.solid:disabled:hover{background:var(--accent)}
   .setmsg{font-size:12px;font-weight:600;margin-top:13px;line-height:1.5;min-height:1px}
   .setmsg.ok{color:var(--ok)}
   .setmsg.err{color:var(--danger)}
@@ -570,7 +572,7 @@
       <input id="ghBranch" type="text" placeholder="main" autocomplete="off" spellcheck="false"></div>
     <div class="setbtns">
       <button id="ghTest" class="sbtn ghost">Test connection</button>
-      <button id="ghSave" class="sbtn solid">Save</button>
+      <button id="ghSave" class="sbtn solid" disabled>Save</button>
       <button id="ghClear" class="sbtn danger">Clear token</button>
     </div>
     <div class="setmsg" id="ghMsg"></div>
@@ -1150,26 +1152,34 @@ publishModal.addEventListener('click',e=>{if(e.target===publishModal)publishModa
 const settingsModal=document.getElementById('settingsModal');
 const $tok=document.getElementById('ghToken'),$own=document.getElementById('ghOwner'),
       $rep=document.getElementById('ghRepo'),$brn=document.getElementById('ghBranch');
+const ghSaveBtn=document.getElementById('ghSave');
 function ghMsg(cls,txt){const e=document.getElementById('ghMsg');e.className='setmsg '+(cls||'');e.textContent=txt||'';}
 function fillSettings(){const d=detectRepo();
-  $tok.value=gh.token||'';$own.value=gh.owner||d.owner||'';$rep.value=gh.repo||d.repo||'';$brn.value=gh.branch||d.branch||'main';ghMsg('','');}
+  $tok.value=gh.token||'';$own.value=gh.owner||d.owner||'';$rep.value=gh.repo||d.repo||'';$brn.value=gh.branch||d.branch||'main';ghMsg('','');
+  ghSaveBtn.disabled=true;}   // Save stays locked until Test connection succeeds
+/* editing any credential field re-locks Save until re-tested */
+[$tok,$own,$rep,$brn].forEach(el=>el.addEventListener('input',()=>{ghSaveBtn.disabled=true;ghMsg('','');}));
 document.getElementById('settingsBtn').onclick=()=>{fillSettings();settingsModal.classList.add('show');};
 document.getElementById('settingsClose').onclick=()=>settingsModal.classList.remove('show');
 settingsModal.addEventListener('click',e=>{if(e.target===settingsModal)settingsModal.classList.remove('show');});
 document.getElementById('ghSave').onclick=()=>{
+  if(ghSaveBtn.disabled)return;
   gh={token:$tok.value.trim(),owner:$own.value.trim(),repo:$rep.value.trim(),branch:($brn.value.trim()||'main')};
   saveGH(gh);
-  ghMsg('ok',(gh.token&&gh.owner&&gh.repo)?'Saved. Publish will commit directly to GitHub.':'Saved. Publish uses download until a token is added.');
+  toast('Settings saved ✓');
+  settingsModal.classList.remove('show');
 };
 document.getElementById('ghClear').onclick=()=>{gh={};saveGH(gh);fillSettings();ghMsg('ok','Token cleared. Publish falls back to download.');};
 document.getElementById('ghTest').onclick=async()=>{
+  ghSaveBtn.disabled=true;   // re-lock until this test passes
   const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim();
   if(!token||!owner||!repo){ghMsg('err','Fill in token, owner, and repository first.');return;}
   ghMsg('busy','Testing connection…');
   try{
     const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}});
     if(r.status===200){const j=await r.json();
-      (j.permissions&&j.permissions.push)?ghMsg('ok',`✓ Connected to ${j.full_name}. Repo reachable. (If Publish still 403s, set the token's Contents permission to Read and write.)`):ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission.`);}
+      if(j.permissions&&j.permissions.push){ghMsg('ok',`✓ Connected to ${j.full_name}. Repo reachable. (If Publish still 403s, set the token's Contents permission to Read and write.)`);ghSaveBtn.disabled=false;}
+      else ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission.`);}
     else if(r.status===401)ghMsg('err','Token rejected (401). Check the token value.');
     else if(r.status===404)ghMsg('err','Repo not found (404). Check owner/repo and token access.');
     else ghMsg('err',`Unexpected response (${r.status}).`);
