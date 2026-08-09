@@ -631,7 +631,7 @@ let showLabels = loadShowLabels();
 let isOwner = false;           // set true once a Supabase session exists
 
 /* ---------- Map ---------- */
-const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true,zoomControl:true}).setView([30,-33],3);
+const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true,zoomControl:true}).setView([30,-30],3);
 
 const BASEMAPS={
   light:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
