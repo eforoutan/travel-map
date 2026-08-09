@@ -14,6 +14,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+<!-- Supabase JS client (replaces the GitHub Contents API / places.json layer) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   /* ---- ArcGIS-style light theme (Esri light-gray canvas) ---- */
   :root{
@@ -422,8 +425,8 @@
       <button class="iconbtn" id="aboutBtn" title="About">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
       </button>
-      <button class="iconbtn" id="settingsBtn" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <button class="iconbtn" id="settingsBtn" title="Sign in / out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/></svg>
       </button>
     </div>
 
@@ -481,8 +484,8 @@
 
     <div class="foot">
       <button class="publishbtn" id="exportBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-        Publish
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/><path d="M21 3v6h-6"/></svg>
+        Sync from cloud
       </button>
     </div>
   </aside>
@@ -523,69 +526,69 @@
     <button class="close" id="aboutClose" title="Close">✕</button>
     <div class="badge">About</div>
     <h2>Cities I've Been</h2>
-    <p class="tag">An interactive world map for pinning everywhere you've wandered. Search a city or right-click the map to drop a pin, label it, and publish it to share across devices.</p>
+    <p class="tag">An interactive world map for pinning everywhere you've wandered. Search a city or right-click the map to drop a pin, label it, and it saves straight to your Supabase PostGIS database — live across every device.</p>
     <div class="techgrid">
       <div class="tech"><div class="th">Leaflet.js</div><div class="td">Open-source web-mapping engine handling the map, markers, and pan/zoom. No API key needed.</div></div>
       <div class="tech"><div class="th">Esri-style light canvas</div><div class="td">CARTO Positron raster tiles over OpenStreetMap data — a clean neutral basemap.</div></div>
       <div class="tech"><div class="th">OpenStreetMap · Nominatim</div><div class="td">Free worldwide geocoding & reverse-geocoding for city search and map clicks.</div></div>
-      <div class="tech"><div class="th">Shared places.json</div><div class="td">Pins load from a file in the repo so every device sees the same map; localStorage caches local edits.</div></div>
-      <div class="tech"><div class="th">GitHub Contents API</div><div class="td">With a token in Settings, Publish commits directly to the repo; otherwise it downloads the file.</div></div>
+      <div class="tech"><div class="th">Supabase PostGIS</div><div class="td">Pins live in a spatial <code>points</code> table. Every device reads the same rows in real time; a trigger keeps the geometry in sync.</div></div>
+      <div class="tech"><div class="th">Row Level Security</div><div class="td">Anyone can view the map; only a signed-in owner can add, edit, or delete pins.</div></div>
       <div class="tech"><div class="th">Vanilla JS · HTML · CSS</div><div class="td">A single self-contained index.html. No frameworks, no build step.</div></div>
     </div>
     <p class="foot-note">A single <code>index.html</code> — drop it on GitHub Pages and it just works.</p>
   </div>
 </div>
 
-<div class="modal" id="publishModal">
-  <div class="card">
-    <button class="close" id="publishClose" title="Close">✕</button>
-    <div class="badge">Publish your map</div>
-    <h2>File downloaded</h2>
-    <p class="tag">A file called <code>places.json</code> just downloaded. To share these pins across devices, commit it to your repo:</p>
-    <ol class="steps">
-      <li>Open your repo on GitHub (the one with <code>index.html</code>).</li>
-      <li>Click <b>Add file → Upload files</b>.</li>
-      <li>Drag in <code>places.json</code> and allow it to replace the old one.</li>
-      <li>Click <b>Commit changes</b>.</li>
-    </ol>
-    <p class="foot-note">Tip: add a GitHub token in <b>Settings</b> and Publish will commit automatically — no manual upload.</p>
-  </div>
-</div>
-
 <div class="modal" id="settingsModal">
   <div class="card">
     <button class="close" id="settingsClose" title="Close">✕</button>
-    <div class="badge">Auto-publish setup</div>
-    <h2>Publish directly to GitHub</h2>
-    <p class="tag">Add a GitHub token and <b>Publish</b> will commit <code>places.json</code> automatically. Leave empty to keep using the download method.</p>
-    <div class="setrow">
-      <label class="slabel" for="ghToken">Fine-grained personal access token</label>
-      <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+    <div class="badge">Owner sign-in</div>
+    <h2>Sign in to edit</h2>
+    <p class="tag">Anyone can view this map. To add, edit, or delete pins you sign in with the email registered as the map owner in Supabase. We'll email you a one-time magic link — no password.</p>
+
+    <div id="signedOutView">
+      <div class="setrow">
+        <label class="slabel" for="authEmail">Owner email</label>
+        <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
+      </div>
+      <div class="setbtns">
+        <button id="authSend" class="sbtn solid">Send magic link</button>
+      </div>
     </div>
-    <div class="setgrid">
-      <div class="setrow"><label class="slabel" for="ghOwner">Owner (username)</label>
-        <input id="ghOwner" type="text" placeholder="eforoutan" autocomplete="off" spellcheck="false"></div>
-      <div class="setrow"><label class="slabel" for="ghRepo">Repository</label>
-        <input id="ghRepo" type="text" placeholder="travel-map" autocomplete="off" spellcheck="false"></div>
+
+    <div id="signedInView" style="display:none">
+      <div class="security" style="margin-top:16px">
+        <div class="sectitle">Signed in</div>
+        <p id="authWho">—</p>
+      </div>
+      <div class="setbtns">
+        <button id="authSignout" class="sbtn danger">Sign out</button>
+      </div>
     </div>
-    <div class="setrow"><label class="slabel" for="ghBranch">Branch</label>
-      <input id="ghBranch" type="text" placeholder="main" autocomplete="off" spellcheck="false"></div>
-    <div class="setbtns">
-      <button id="ghTest" class="sbtn ghost">Test connection</button>
-      <button id="ghSave" class="sbtn solid" disabled>Save</button>
-      <button id="ghClear" class="sbtn danger">Clear token</button>
-    </div>
-    <div class="setmsg" id="ghMsg"></div>
+
+    <div class="setmsg" id="authMsg"></div>
+
     <div class="security">
-      <div class="sectitle">Where your token lives</div>
-      <p>Stored only in <b>this browser on this device</b> — never written into the repo or the public page, so visitors can't see it. Treat it like a password.</p>
-      <p>Use a <b>fine-grained</b> token scoped to <b>only this one repository</b>, with <b>Contents: Read and write</b> permission. If your test passes but Publish fails with 403, the Contents permission is read-only — set it to Read and write.</p>
-      <p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token →</a></p>
+      <div class="sectitle">How editing is protected</div>
+      <p>The map reads through Supabase's public <b>anon key</b>, which is safe to ship in the page. Writing is gated by <b>Row Level Security</b>: only an authenticated session may insert, update, or delete rows.</p>
+      <p>If you try to edit while signed out, the change is refused by the database and you'll be prompted to sign in.</p>
     </div>
   </div>
 </div>
 
 <script>
+/* ============================================================
+   SUPABASE CONFIG  —  fill these two in.
+   Project URL and the PUBLIC anon key from
+   Supabase → Project Settings → API.
+   The anon key is designed to be public; RLS protects writes.
+   ============================================================ */
+const SUPABASE_URL  = "https://jxxrostvrvwqjvofkvmf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eHJvc3R2cnZ3cWp2b2Zrdm1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjc0OTksImV4cCI6MjA5Njc0MzQ5OX0.qNy323UrsF4aJG_ny0lMTUXJscJrLmzOkE5igai8Pko";
+const TABLE = "places";   // your spatial table
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
 const DEFAULT_ICON="📍";   // single fixed marker; existing pins keep their stored icon field
 
 /* ---------- Continent classification from coordinates ----------
@@ -605,13 +608,9 @@ function continentOf(lat,lng){
     return 'North America';                        // everything else west = N. America
   }
   // Asia — claim the Middle East / Iran / Russia / India / SE Asia BEFORE Europe & Africa.
-  // Asia spans roughly lng 26..180. Carve Europe and Africa out of the west edge.
   if(x>=26 && x<=180){
-    // Europe: high-latitude west (incl. European Russia to the Urals ~60E)
     if(y>=38 && x<=42) return 'Europe';
     if(y>=45 && x<=60) return 'Europe';
-    // Africa: NE Africa (Egypt/Sudan/Horn). Keep its eastern edge off the Arabian/Iranian
-    // plate — Africa only reaches ~43E above the Horn, and the Horn is below ~18N.
     if(y<=33 && x<=43) return 'Africa';            // Egypt, Sudan, E. Africa
     if(y<=18 && x<=51) return 'Africa';            // Horn of Africa
     return 'Asia';                                 // Arabia, Iran, India, Russia, SE Asia, etc.
@@ -626,9 +625,10 @@ function continentOf(lat,lng){
 const CONTINENT_ORDER=['North America','South America','Europe','Africa','Asia','Oceania','Antarctica','Other'];
 const CONTINENT_EMOJI={'North America':'🌎','South America':'🌎','Europe':'🌍','Africa':'🌍','Asia':'🌏','Oceania':'🌏','Antarctica':'🧊','Other':'📍'};
 
-let places = load();
+let places = [];               // now sourced from Supabase, not localStorage
 const markers = {};
 let showLabels = loadShowLabels();
+let isOwner = false;           // set true once a Supabase session exists
 
 /* ---------- Map ---------- */
 const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true,zoomControl:true}).setView([30,0],3);
@@ -638,7 +638,6 @@ const BASEMAPS={
     attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}),
   satellite:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics',maxZoom:19}),
-  // labels overlay drawn on top of satellite so place names stay readable
   satLabels:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
     attribution:'',maxZoom:19,pane:'shadowPane'})
 };
@@ -700,7 +699,6 @@ function renderList(){
     list.innerHTML='<div class="empty">No pins yet.<br>Search a city or right-click the map to begin.</div>';
     return;
   }
-  // group by continent
   const groups={};
   places.forEach(p=>{
     const c=continentOf(p.lat,p.lng);
@@ -749,20 +747,79 @@ function renderList(){
   });
 }
 
-/* ---------- Data ops ---------- */
-function addPlace(name,lat,lng,label,quiet){
-  const p={id:Date.now()+''+Math.floor(Math.random()*999),name,lat,lng,label:label||'',icon:DEFAULT_ICON};
-  places.push(p);save();renderMarker(p);renderList();
-  if(quiet){markers[p.id].openPopup();}
-  else{map.flyTo([lat,lng],7);markers[p.id].openPopup();}
-  toast(`Pinned ${name}`);
-  return p;
+/* ============================================================
+   DATA OPS  —  now backed by Supabase PostGIS.
+   The DB trigger fills geom from lat/lng, so we only send
+   name / lat / lng / label / icon.
+   ============================================================ */
+
+/* helper: a local place object from a DB row */
+function rowToPlace(r){
+  return {id:String(r.id),name:r.name,lat:r.lat,lng:r.lng,label:r.label||'',icon:r.icon||DEFAULT_ICON};
 }
-function removePlace(id){
+
+/* require sign-in for any write; show a friendly nudge otherwise */
+function requireOwner(){
+  if(isOwner)return true;
+  toast('Sign in (top-right) to edit the map');
+  openSettings();
+  return false;
+}
+
+async function addPlace(name,lat,lng,label,quiet){
+  if(!requireOwner())return null;
+  // optimistic local pin so the UI feels instant
+  const temp={id:'tmp'+Date.now(),name,lat,lng,label:label||'',icon:DEFAULT_ICON};
+  places.push(temp);renderMarker(temp);renderList();
+  if(quiet){markers[temp.id].openPopup();}
+  else{map.flyTo([lat,lng],7);markers[temp.id].openPopup();}
+
+  try{
+    const {data,error}=await sb.from(TABLE)
+      .insert({name,lat,lng,label:label||'',icon:DEFAULT_ICON})
+      .select('id,name,lat,lng,label,icon')
+      .single();
+    if(error)throw error;
+    // swap the temp pin for the real one (real DB id)
+    swapTemp(temp.id,rowToPlace(data));
+    toast(`Pinned ${data.name}`);
+    return places.find(p=>p.id===String(data.id));
+  }catch(err){
+    // roll back the optimistic pin
+    removeLocal(temp.id);
+    toast('Save failed: '+(err.message||err));
+    return null;
+  }
+}
+
+/* replace a temp local pin with the saved DB version */
+function swapTemp(tempId,real){
+  const i=places.findIndex(p=>p.id===tempId);
+  if(i>=0)places[i]=real; else places.push(real);
+  if(markers[tempId]){map.removeLayer(markers[tempId]);delete markers[tempId];}
+  renderMarker(real);renderList();
+}
+/* remove a pin from the map+list locally only (no DB call) */
+function removeLocal(id){
   const i=places.findIndex(p=>p.id===id);if(i<0)return;
-  map.removeLayer(markers[id]);delete markers[id];
-  const nm=places[i].name;places.splice(i,1);save();renderList();
-  toast(`Removed ${nm}`);
+  if(markers[id]){map.removeLayer(markers[id]);delete markers[id];}
+  places.splice(i,1);renderList();
+}
+
+async function removePlace(id){
+  if(!requireOwner())return;
+  const p=places.find(x=>x.id===id);if(!p)return;
+  const nm=p.name;
+  // temp/optimistic pins that never hit the DB can just be dropped
+  if(String(id).startsWith('tmp')){removeLocal(id);return;}
+  try{
+    const {error}=await sb.from(TABLE).delete().eq('id',Number(id));
+    if(error)throw error;
+    removeLocal(id);
+    toast(`Removed ${nm}`);
+  }catch(err){
+    toast('Delete failed: '+(err.message||err));
+  }
 }
 
 /* ---------- Zoom to Extent ---------- */
@@ -805,7 +862,7 @@ function startDraw(mode){
   }else{
     map.on('click',onRectClick);
     map.on('mousemove',onRectMove);
-    document.getElementById('drawFinish').style.display='none'; // rect finishes on 2nd click
+    document.getElementById('drawFinish').style.display='none';
   }
 }
 function setDrawText(){
@@ -819,8 +876,6 @@ function setDrawText(){
                          : `${n} points · click to add more, or Finish`;
   }
 }
-
-/* ---- polygon mode ---- */
 function onPolyClick(e){
   drawPts.push([e.latlng.lat,e.latlng.lng]);
   const v=L.circleMarker(e.latlng,{radius:4,color:'#fff',weight:2,
@@ -840,14 +895,12 @@ function redrawPoly(){
     drawLine=L.polyline(drawPts,{color:accent,weight:2,dashArray:'4 4'}).addTo(map);
   }
 }
-
-/* ---- rectangle mode ---- */
 function onRectClick(e){
   if(!rectCornerA){
     rectCornerA=e.latlng;
     setDrawText();
   }else{
-    drawRect(e.latlng);          // lock in second corner
+    drawRect(e.latlng);
     finishDraw();
   }
 }
@@ -861,7 +914,6 @@ function drawRect(cornerB){
   else{rectShape=L.rectangle(bounds,{color:accent,weight:2,fillColor:accent,
     fillOpacity:.12,dashArray:'4 4'}).addTo(map);}
 }
-
 function finishDraw(){
   if(drawMode==='rect'){
     if(!rectShape){toast('Click two opposite corners');return;}
@@ -908,8 +960,6 @@ function clearSelection(){
   selResult.classList.remove('show');
   highlightPins([]);
 }
-
-/* ray-casting point-in-polygon; poly = [[lat,lng],...] */
 function pointInPolygon(lat,lng,poly){
   let inside=false;
   for(let i=0,j=poly.length-1;i<poly.length;j=i++){
@@ -994,18 +1044,28 @@ function handleCtxAction(act){
 }
 
 /* ---------- Edit ---------- */
-function editPin(id){
+async function editPin(id){
+  if(!requireOwner())return;
   const p=places.find(x=>x.id===id);if(!p)return;
   const newName=window.prompt('Place name:',p.name);
   if(newName===null)return;
-  const newLabel=window.prompt(`Label for “${newName.trim()||p.name}” (optional):`,p.label||'');
+  const newLabel=window.prompt(`Label for "${newName.trim()||p.name}" (optional):`,p.label||'');
   if(newLabel===null)return;
-  if(newName.trim())p.name=newName.trim();
-  p.label=newLabel.trim();save();
-  const m=markers[id];
-  m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
-  m.setTooltipContent(tipText(p));
-  renderList();toast('Pin updated');
+  const name=newName.trim()||p.name;
+  const label=newLabel.trim();
+  try{
+    if(!String(id).startsWith('tmp')){
+      const {error}=await sb.from(TABLE).update({name,label}).eq('id',Number(id));
+      if(error)throw error;
+    }
+    p.name=name;p.label=label;
+    const m=markers[id];
+    m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
+    m.setTooltipContent(tipText(p));
+    renderList();toast('Pin updated');
+  }catch(err){
+    toast('Update failed: '+(err.message||err));
+  }
 }
 
 /* map right-click + dismiss */
@@ -1015,9 +1075,12 @@ map.on('movestart zoomstart',()=>closeCtxMenu());
 window.addEventListener('scroll',()=>closeCtxMenu(),true);
 
 async function addPlaceAt(lat,lng){
+  if(!requireOwner())return;
   const label=document.getElementById('label').value.trim();
-  const p=addPlace(`Pin (${lat.toFixed(3)}, ${lng.toFixed(3)})`,lat,lng,label,true);
+  const p=await addPlace(`Pin (${lat.toFixed(3)}, ${lng.toFixed(3)})`,lat,lng,label,true);
   document.getElementById('label').value='';
+  if(!p)return;
+  // reverse-geocode to a nicer name, then persist it
   try{
     const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lng}`,{headers:{'Accept-Language':'en'}});
     const d=await r.json();
@@ -1027,10 +1090,15 @@ async function addPlaceAt(lat,lng){
       const region=a.state&&a.state!==place?`, ${a.state}`:'';
       const country=a.country?`, ${a.country}`:'';
       const full=place?place+region+country:'';
-      if(full){p.name=full;save();
+      if(full){
+        p.name=full;
         const m=markers[p.id];
         m.setPopupContent(`<div class="pop"><b>${esc(p.name)}</b>${p.label?`<div class="pl">${esc(p.label)}</div>`:''}</div>`);
-        m.setTooltipContent(tipText(p));renderList();}
+        m.setTooltipContent(tipText(p));renderList();
+        if(!String(p.id).startsWith('tmp')){
+          await sb.from(TABLE).update({name:full}).eq('id',Number(p.id));
+        }
+      }
     }
   }catch(e){}
 }
@@ -1068,144 +1136,88 @@ async function doGeocode(q){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.searchwrap'))results.classList.remove('show');});
 
-/* ---------- Persistence ---------- */
-function save(){try{localStorage.setItem('usa_places_v1',JSON.stringify(places));}catch(e){}}
-function load(){try{return JSON.parse(localStorage.getItem('usa_places_v1'))||[];}catch(e){return[];}}
-function saveShowLabels(){try{localStorage.setItem('usa_showlabels_v1',showLabels?'1':'0');}catch(e){}}
-function loadShowLabels(){try{return localStorage.getItem('usa_showlabels_v1')==='1';}catch(e){return false;}}
-
+/* ============================================================
+   LOAD FROM SUPABASE  (replaces localStorage load + places.json)
+   ============================================================ */
 function refreshAll(){
   Object.values(markers).forEach(m=>map.removeLayer(m));
   for(const k in markers)delete markers[k];
   places.forEach(renderMarker);renderList();
 }
 async function loadSharedPlaces(){
+  setStatus('loading');
   try{
-    const r=await fetch('places.json?t='+Date.now(),{cache:'no-store'});
-    if(!r.ok)throw 0;
-    const data=await r.json();
-    if(Array.isArray(data)){places=data;save();refreshAll();setStatus('shared',data.length);return;}
-    throw 0;
-  }catch(e){setStatus(places.length?'local':'empty',places.length);}
+    const {data,error}=await sb.from(TABLE)
+      .select('id,name,lat,lng,label,icon')
+      .order('id',{ascending:true});
+    if(error)throw error;
+    places=(data||[]).map(rowToPlace);
+    refreshAll();
+    setStatus('shared',places.length);
+  }catch(err){
+    setStatus('error');
+    toast('Could not load pins: '+(err.message||err));
+  }
 }
 
-/* ---------- GitHub publish ---------- */
-function loadGH(){try{return JSON.parse(localStorage.getItem('usa_gh_v1'))||{};}catch(e){return{};}}
-function saveGH(c){try{localStorage.setItem('usa_gh_v1',JSON.stringify(c));}catch(e){}}
-let gh=loadGH();
-function detectRepo(){
-  const out={owner:'',repo:'',branch:'main'};
-  const m=location.hostname.match(/^([^.]+)\.github\.io$/i);
-  if(m){out.owner=m[1];const seg=location.pathname.split('/').filter(Boolean);
-    out.repo=seg.length?seg[0]:`${m[1]}.github.io`;}
-  return out;
-}
-function downloadJSON(){
-  const blob=new Blob([JSON.stringify(places,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='places.json';a.click();
-}
-function toB64(str){return btoa(unescape(encodeURIComponent(str)));}
-async function safeErr(res){try{const j=await res.json();return j.message||'';}catch(e){return '';}}
-async function publishToGitHub(){
-  const token=(gh.token||'').trim(),owner=(gh.owner||'').trim(),repo=(gh.repo||'').trim(),branch=(gh.branch||'main').trim();
-  if(!token||!owner||!repo)throw new Error('Missing token, owner, or repo — open Settings.');
-  const api=`https://api.github.com/repos/${owner}/${repo}/contents/places.json`;
-  const headers={'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
-  let sha=null;
-  const get=await fetch(`${api}?ref=${encodeURIComponent(branch)}`,{headers});
-  if(get.status===200){sha=(await get.json()).sha;}
-  else if(get.status!==404){throw new Error(`Read failed (${get.status}) ${await safeErr(get)}`);}
-  const body={message:`Update places.json (${places.length} pins) via map app`,content:toB64(JSON.stringify(places,null,2)),branch};
-  if(sha)body.sha=sha;
-  const put=await fetch(api,{method:'PUT',headers,body:JSON.stringify(body)});
-  if(put.status===403){
-    throw new Error("Publish failed (403): the token can read this repo but can't write to it. On GitHub, set this token's Repository permissions → Contents → Read and write.");
-  }
-  if(!(put.status===200||put.status===201))throw new Error(`Publish failed (${put.status}) ${await safeErr(put)}`);
-  return true;
-}
 function setStatus(kind,n){
   const el=document.getElementById('dataStatus');if(!el)return;
-  if(kind==='shared')el.textContent=`Shared map · ${n} pin${n===1?'':'s'}`;
-  else if(kind==='local')el.textContent='Local pins · not yet published';
-  else if(kind==='publishing')el.textContent='Publishing to GitHub…';
-  else if(kind==='published')el.textContent=`Published · live in ~1–2 min`;
-  else el.textContent='No shared map found · add pins, then publish';
+  if(kind==='shared')el.textContent=`Supabase · ${n} pin${n===1?'':'s'}${isOwner?' · editing':' · view only'}`;
+  else if(kind==='loading')el.textContent='Loading from Supabase…';
+  else if(kind==='error')el.textContent='Could not reach Supabase';
+  else el.textContent='No pins found';
 }
+
+/* "Sync from cloud" button — just re-pulls the table */
 const exportBtn=document.getElementById('exportBtn');
 exportBtn.onclick=async()=>{
-  if(gh.token&&gh.owner&&gh.repo){
-    exportBtn.disabled=true;const prev=exportBtn.innerHTML;exportBtn.textContent='Publishing…';
-    setStatus('publishing');
-    try{await publishToGitHub();setStatus('published',places.length);toast('Published to GitHub ✓');}
-    catch(err){setStatus('local',places.length);ghMsg('err',err.message||'Publish failed.');toast(err.message||'Publish failed');}
-    finally{exportBtn.disabled=false;exportBtn.innerHTML=prev;}
-  }else{downloadJSON();publishModal.classList.add('show');}
+  exportBtn.disabled=true;const prev=exportBtn.innerHTML;exportBtn.textContent='Syncing…';
+  try{await loadSharedPlaces();toast('Synced from Supabase ✓');}
+  finally{exportBtn.disabled=false;exportBtn.innerHTML=prev;}
 };
 
-/* ---------- Modals ---------- */
+/* ============================================================
+   AUTH  —  Supabase magic-link sign-in gates editing
+   ============================================================ */
 const aboutModal=document.getElementById('aboutModal');
 document.getElementById('aboutBtn').onclick=()=>aboutModal.classList.add('show');
 document.getElementById('aboutClose').onclick=()=>aboutModal.classList.remove('show');
 aboutModal.addEventListener('click',e=>{if(e.target===aboutModal)aboutModal.classList.remove('show');});
-const publishModal=document.getElementById('publishModal');
-document.getElementById('publishClose').onclick=()=>publishModal.classList.remove('show');
-publishModal.addEventListener('click',e=>{if(e.target===publishModal)publishModal.classList.remove('show');});
 
 const settingsModal=document.getElementById('settingsModal');
-const $tok=document.getElementById('ghToken'),$own=document.getElementById('ghOwner'),
-      $rep=document.getElementById('ghRepo'),$brn=document.getElementById('ghBranch');
-const ghSaveBtn=document.getElementById('ghSave');
-function ghMsg(cls,txt){const e=document.getElementById('ghMsg');e.className='setmsg '+(cls||'');e.textContent=txt||'';}
-function fillSettings(){const d=detectRepo();
-  $tok.value=gh.token||'';$own.value=gh.owner||d.owner||'';$rep.value=gh.repo||d.repo||'';$brn.value=gh.branch||d.branch||'main';ghMsg('','');
-  ghSaveBtn.disabled=true;}   // Save stays locked until Test connection succeeds
-/* editing any credential field re-locks Save until re-tested */
-[$tok,$own,$rep,$brn].forEach(el=>el.addEventListener('input',()=>{ghSaveBtn.disabled=true;ghMsg('','');}));
-document.getElementById('settingsBtn').onclick=()=>{fillSettings();settingsModal.classList.add('show');};
+function openSettings(){settingsModal.classList.add('show');}
+document.getElementById('settingsBtn').onclick=openSettings;
 document.getElementById('settingsClose').onclick=()=>settingsModal.classList.remove('show');
 settingsModal.addEventListener('click',e=>{if(e.target===settingsModal)settingsModal.classList.remove('show');});
-document.getElementById('ghSave').onclick=()=>{
-  if(ghSaveBtn.disabled)return;
-  gh={token:$tok.value.trim(),owner:$own.value.trim(),repo:$rep.value.trim(),branch:($brn.value.trim()||'main')};
-  saveGH(gh);
-  toast('Settings saved ✓');
-  settingsModal.classList.remove('show');
+
+const authMsg=(cls,txt)=>{const e=document.getElementById('authMsg');e.className='setmsg '+(cls||'');e.textContent=txt||'';};
+
+document.getElementById('authSend').onclick=async()=>{
+  const email=document.getElementById('authEmail').value.trim();
+  if(!email){authMsg('err','Enter your email first.');return;}
+  authMsg('busy','Sending magic link…');
+  const {error}=await sb.auth.signInWithOtp({
+    email,
+    options:{emailRedirectTo:window.location.href.split('#')[0]}
+  });
+  if(error)authMsg('err',error.message);
+  else authMsg('ok','Check your inbox and click the link. This page will unlock automatically.');
 };
-document.getElementById('ghClear').onclick=()=>{gh={};saveGH(gh);fillSettings();ghMsg('ok','Token cleared. Publish falls back to download.');};
-document.getElementById('ghTest').onclick=async()=>{
-  ghSaveBtn.disabled=true;   // re-lock until this test fully passes
-  const token=$tok.value.trim(),owner=$own.value.trim(),repo=$rep.value.trim(),branch=($brn.value.trim()||'main');
-  if(!token||!owner||!repo){ghMsg('err','Fill in token, owner, and repository first.');return;}
-  const headers={'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
-  ghMsg('busy','Testing connection…');
-  try{
-    // 1) Repo reachable?
-    const r=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers});
-    if(r.status===401){ghMsg('err','Token rejected (401). Check the token value.');return;}
-    if(r.status===404){ghMsg('err','Repo not found (404). Check owner/repo and token access.');return;}
-    if(r.status!==200){ghMsg('err',`Unexpected response (${r.status}).`);return;}
-    const j=await r.json();
-    if(!(j.permissions&&j.permissions.push)){
-      ghMsg('err',`Connected to ${j.full_name}, but the token lacks write permission. Set Contents to Read and write.`);return;
-    }
-    // 2) Contents-level write check — this is what Publish actually needs.
-    // Read the existing places.json (to get its sha) or confirm it's simply absent.
-    ghMsg('busy','Verifying write access to places.json…');
-    const api=`https://api.github.com/repos/${owner}/${repo}/contents/places.json`;
-    const get=await fetch(`${api}?ref=${encodeURIComponent(branch)}`,{headers});
-    if(get.status===403){
-      ghMsg('err',`Connected to ${j.full_name}, but the token's Contents permission is read-only (403). Set it to Read and write, then test again.`);return;
-    }
-    if(!(get.status===200||get.status===404)){
-      ghMsg('err',`Could not access Contents API (${get.status}) ${await safeErr(get)}`);return;
-    }
-    // Passed both checks — safe to enable Save/Publish.
-    ghMsg('ok',`✓ Connected to ${j.full_name} on "${branch}". Write access confirmed — Publish will commit directly.`);
-    ghSaveBtn.disabled=false;
-  }catch(e){ghMsg('err','Network error — could not reach GitHub.');}
+document.getElementById('authSignout').onclick=async()=>{
+  await sb.auth.signOut();
+  authMsg('ok','Signed out.');
 };
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){aboutModal.classList.remove('show');publishModal.classList.remove('show');settingsModal.classList.remove('show');}});
+
+function reflectSession(session){
+  isOwner=!!session;
+  document.getElementById('signedOutView').style.display=isOwner?'none':'';
+  document.getElementById('signedInView').style.display=isOwner?'':'none';
+  if(isOwner){
+    document.getElementById('authWho').textContent=session.user.email||'authenticated';
+  }
+  setStatus('shared',places.length);
+}
+sb.auth.onAuthStateChange((_event,session)=>reflectSession(session));
 
 /* ---------- utils ---------- */
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -1216,6 +1228,8 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 const labelChk=document.getElementById('labelChk');
 labelChk.checked=showLabels;
 labelChk.addEventListener('change',()=>{showLabels=labelChk.checked;saveShowLabels();applyShowLabels();toast(showLabels?'Labels shown':'Labels hidden');});
+function saveShowLabels(){try{localStorage.setItem('usa_showlabels_v1',showLabels?'1':'0');}catch(e){}}
+function loadShowLabels(){try{return localStorage.getItem('usa_showlabels_v1')==='1';}catch(e){return false;}}
 
 /* ---------- Mobile sheet ---------- */
 const panel=document.getElementById('panel'),scrim=document.getElementById('scrim'),
@@ -1260,12 +1274,15 @@ mapEl.addEventListener('touchend',clearLP,{passive:true});
 document.querySelectorAll('.bm-opt').forEach(b=>{
   b.addEventListener('click',()=>applyBasemap(b.dataset.bm));
 });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){aboutModal.classList.remove('show');settingsModal.classList.remove('show');}});
 
 /* ---------- init ---------- */
 applyBasemap(basemap);
-places.forEach(renderMarker);
-renderList();
-loadSharedPlaces();
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  reflectSession(session);
+  await loadSharedPlaces();
+})();
 </script>
 </body>
 </html>
