@@ -634,7 +634,7 @@ let isOwner = false;           // set true once a Supabase session exists
 const map = L.map('map',{minZoom:2,maxZoom:18,worldCopyJump:true,zoomControl:true}).setView([30,-30],3);
 
 const BASEMAPS={
-  light:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  light:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=cb1_2wvv_1_085c571c0a017b54bfd4938a',{
     attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}),
   satellite:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics',maxZoom:19}),
